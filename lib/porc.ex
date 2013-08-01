@@ -23,6 +23,8 @@ defmodule Porc do
   Executes the command synchronously. Takes the same options as `spawn()`
   except for one difference: `options[:in]` cannot be `:pid`.
   """
+  def call(cmdspec, options // [])
+
   def call(cmd, options) when is_binary(cmd) do
     call(shplit(cmd), options)
   end
@@ -206,9 +208,9 @@ defmodule Porc do
   defp process_input_opts(opt) do
     case opt do
       nil                           -> nil
+      :pid                          -> :pid
       { :file, fid }                -> { :file, fid }
       { :path, path }               -> { :path, path }
-      { pid, ref } when is_pid(pid) -> { pid, ref }
       bin when is_binary(bin)       -> bin
     end
   end

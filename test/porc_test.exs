@@ -1,6 +1,17 @@
 defmodule PorcOutputsTest do
   use ExUnit.Case, async: true
 
+  test "cat no input" do
+    assert {0, nil, nil} = Porc.call("cat")
+    assert {1, nil, nil} = Porc.call("cat -goo")
+  end
+
+  test "cat input pid" do
+    assert_raise RuntimeError, fn ->
+      Porc.call("cat", in: :pid)
+    end
+  end
+
   test "cat no output" do
     assert {0, nil, nil}
            = Porc.call("cat", in: "Hello world!")
