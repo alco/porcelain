@@ -1,9 +1,9 @@
-Porc
-====
+Porcelain
+=========
 
 ## Prerequisites
 
-Porc requires [goon](https://github.com/alco/goon) to work. The binary for OS X is included, put it in your application's working directory or somewhere in your `$PATH`.
+Porcelain requires [goon](https://github.com/alco/goon) to work. The binary for OS X is included, put it in your application's working directory or somewhere in your `$PATH`.
 
 ## Usage
 

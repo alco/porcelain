@@ -1,8 +1,8 @@
-defmodule Porc.Mixfile do
+defmodule Porcelain.Mixfile do
   use Mix.Project
 
   def project do
-    [ app: :porc,
+    [ app: :porcelain,
       version: "0.0.1",
       elixir: "~> 0.10.1-dev",
       deps: deps ]
