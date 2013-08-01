@@ -1,5 +1,8 @@
 defmodule Porc do
-  defrecord Process, [:port, :in, :out, :err]
+  defrecord Process, [:port, :in, :out, :err] do
+    def send(Process[]=proc, data) do
+    end
+  end
 
   @doc """
   Takes a shell invocation and produces a tuple `{ cmd, args }` suitable for
@@ -98,8 +101,7 @@ defmodule Porc do
   end
 
   defp process_port_output(nil, _, _) do
-    # discard data
-    nil
+    raise RuntimeError, message: "Unexpected data on client's end"
   end
 
   defp process_port_output({ :buffer, out_data }, in_data, _) do
@@ -161,6 +163,10 @@ defmodule Porc do
                                      and is_list(args)
                                      and is_list(options) do
     {port, input, output, error} = init_port_connection(cmd, args, options)
+    if input == :pid do
+      pid = spawn(fn -> Port.connect(port, self) end)
+      input = {:pid, pid}
+    end
     Process[port: port, in: input, out: output, err: error]
   end
 
@@ -235,17 +241,3 @@ defmodule Porc do
     end
   end
 end
-
-#p = Porc.spawn("cat", in: "abc" | :pid | {:file, ...},
-                     #out: :err | :buffer | pid | {:file, ...},
-                     #err: :out | :buffer | pid | {:file, ...})
-
-#Porc.call("cat", in: "Hello world!")
-# ==>
-#p = Port.open({:spawn_executable, '/usr/local/bin/go'}, [{:args, ["run", "main.go", "cat"]}, :binary, {:packet, 2}, :exit_status])
-
-#p = Port.open({:spawn_executable, '/usr/local/bin/go'}, [{:args, ["run", "main.go", "cat -and dogs"]}, :binary, :exit_status])
-#p = Port.open({:spawn_executable, '/usr/local/bin/go'}, [{:args, ["run", "main.go", "cat", "-and", "dogs"]}, :binary, :exit_status])
-#
-#p = Port.open({:spawn_executable, '/usr/local/bin/go'}, [{:args, ["run", "main.go", "cat"]}, :binary, {:packet, 2}, :exit_status])
-#p = Port.open({:spawn_executable, '/bin/cat'}, [:binary, :stream, :exit_status])
