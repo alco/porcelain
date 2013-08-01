@@ -1,7 +1,8 @@
 defmodule Porc do
-  defrecord Process, [:port, :in, :out, :err] do
-    def send(Process[]=proc, data) do
-    end
+  defrecord Process, [:status, :in, :out, :err]
+
+  def send(pid, data) do
+    pid <- {:data, data}
   end
 
   @doc """
@@ -45,8 +46,7 @@ defmodule Porc do
 
   @file_block_size 1024
 
-  # Synchronous communication with a port
-  defp communicate(port, input, output, error) do
+  defp send_input(port, input) do
     case input do
       bin when is_binary(bin) and byte_size(bin) > 0 ->
         #IO.puts "sending input #{bin}"
@@ -64,7 +64,11 @@ defmodule Porc do
     end
     # Send EOF to indicate the end of input or no input
     Port.command(port, "")
+  end
 
+  # Synchronous communication with a port
+  defp communicate(port, input, output, error) do
+    send_input(port, input)
     collect_output(port, output, error)
   end
 
@@ -163,11 +167,47 @@ defmodule Porc do
                                      and is_list(args)
                                      and is_list(options) do
     {port, input, output, error} = init_port_connection(cmd, args, options)
-    if input == :pid do
-      pid = spawn(fn -> Port.connect(port, self) end)
-      input = {:pid, pid}
+    proc = Process[in: input, out: output, err: error]
+    parent = self
+    pid = spawn(fn -> do_loop(port, proc, parent) end)
+    #Port.connect port, pid
+    {pid, port}
+  end
+
+  defp do_loop(port, proc=Process[in: in_opt], parent) do
+    Port.connect port, self
+    if in_opt != :pid do
+      send_input(port, in_opt)
     end
-    Process[port: port, in: input, out: output, err: error]
+    exchange_data(port, proc, parent)
+  end
+
+  defp exchange_data(port, proc=Process[in: input, out: output, err: error], parent) do
+    receive do
+      { ^port, {:data, <<?o, data :: binary>>} } ->
+        #IO.puts "Did receive out"
+        output = process_port_output(output, data, :stdout)
+        exchange_data(port, proc.out(output), parent)
+
+      { ^port, {:data, <<?e, data :: binary>>} } ->
+        #IO.puts "Did receive err"
+        error = process_port_output(error, data, :stderr)
+        exchange_data(port, proc.err(error), parent)
+
+      { ^port, {:exit_status, status} } ->
+        parent <- {self, Process[status: status,
+                                 in: input,
+                                 out: flatten(output),
+                                 err: flatten(error)]}
+
+      { :data, :eof } ->
+        Port.command(port, "")
+        exchange_data(port, proc, parent)
+
+      { :data, data } when is_binary(data) ->
+        Port.command(port, data)
+        exchange_data(port, proc, parent)
+    end
   end
 
   defp port_options(options, cmd, args) do
