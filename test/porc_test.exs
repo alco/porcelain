@@ -1,5 +1,5 @@
 defmodule PorcOutputsTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   test "cat no output" do
     assert {0, nil, nil}
@@ -25,7 +25,7 @@ defmodule PorcOutputsTest do
   end
 
   test "cat stderr buffer" do
-    assert {1, nil, _}  # FIXME: replace the last element with <<_::binary>>}
+    assert {1, nil, <<_::binary>>}
            = Porc.call("cat -goo", in: "Hello world!", err: :buffer)
   end
 
@@ -34,7 +34,7 @@ defmodule PorcOutputsTest do
     pidspec = {self, ref}
     assert {1, nil, ^pidspec}
            = Porc.call("cat -goo", in: "Hello world!", err: pidspec)
-    assert_receive {^ref, :stderr, _}  # FIXME: replace the last element with <<_::binary>>}
+    assert_receive {^ref, :stderr, <<_::binary>>}
   end
 
   test "cat from path" do
@@ -82,7 +82,7 @@ defmodule PorcOutputsTest do
 end
 
 defmodule PorcRedirectsTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   test "cat stdout to stderr /dev/null" do
     assert {0, nil, nil}
@@ -100,7 +100,7 @@ defmodule PorcRedirectsTest do
   end
 
   test "cat stderr to stdout buffer" do
-    assert {1, _, nil}  # FIXME: replace the second element with <<_::binary>>
+    assert {1, <<_::binary>>, nil}
            = Porc.call("cat -goo", in: "Hello world!", err: :out, out: :buffer)
   end
 end
