@@ -1,3 +1,8 @@
-# Porc
+Porc
+====
 
-** TODO: Add description **
+## Prerequisites
+
+Porc requires [goon](https://github.com/alco/goon) to work.
+
+## Usage
