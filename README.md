@@ -1,6 +1,8 @@
 Porcelain
 =========
 
+Launch and communicate with external OS processes in Elixir without limitations of Erlang ports. Porcelain builds on ports for security, but provides richer functionality and simple API for managing external processes.
+
 ## Prerequisites
 
 Porcelain requires [goon](https://github.com/alco/goon) to work. Get the binary for your OS and put it in your application's working directory or somewhere in your `$PATH`.
