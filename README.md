@@ -56,4 +56,4 @@ iex> flush
 
 ---
 
-See the [tests](https://github.com/alco/porc/blob/master/test/porc_test.exs) for more usage examples.
+See the tests for more usage examples.
