@@ -27,9 +27,11 @@ iex> flush
 #=> {#Reference<0.0.0.207>, :stdout, "Hello world!"}
 
 ## Using files for input and output
-{:ok, f} = File.open("data.txt")
-{:ok, out_f} = File.open("output.txt", [:write])
-Porc.call("cat", in: {:file, f}, out: {:file, out_f})
+File.open "data.txt", [:read], fn(f_in) ->
+  File.open "output.txt", [:write], fn(f_out) ->
+    Porc.call("cat", in: {:file, f_in}, out: {:file, f_out})
+  end
+end
 #=> {0, {:file, #PID<0.48.0>}, ""}
 ```
 ```sh
