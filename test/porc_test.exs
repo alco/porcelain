@@ -64,6 +64,8 @@ defmodule PorcOutputsTest do
     path = outpath
     pathspec = {:path, path}
 
+    assert !File.exists?(path)
+
     assert {0, ^pathspec, nil}
            = Porc.call("cat", in: "Hello world!", out: pathspec)
     assert {:ok, "Hello world!"} = File.read(path)
@@ -73,6 +75,8 @@ defmodule PorcOutputsTest do
 
   test "cat to path append" do
     path = outpath
+    assert !File.exists?(path)
+
     Porc.call("cat", in: "Hello world!", out: {:path, path})
 
     pathspec = {:append, path}

@@ -159,6 +159,8 @@ defmodule Porc do
   Spawn an external process and returns `Process` record ready for
   communication.
   """
+  def spawn(cmdspec, options // [])
+
   def spawn(cmd, options) when is_binary(cmd) do
     spawn(shplit(cmd), options)
   end
@@ -169,7 +171,7 @@ defmodule Porc do
     {port, input, output, error} = init_port_connection(cmd, args, options)
     proc = Process[in: input, out: output, err: error]
     parent = self
-    pid = spawn(fn -> do_loop(port, proc, parent) end)
+    pid = Kernel.spawn(fn -> do_loop(port, proc, parent) end)
     #Port.connect port, pid
     {pid, port}
   end
