@@ -215,22 +215,26 @@ defmodule Porc do
   defp port_options(options, cmd, args) do
     flags = get_flags(options)
     #[{:args, List.flatten([["run", "main.go"], flags, ["--"], [cmd | args]])},
-    [{:args, List.flatten([flags, ["--"], [cmd | args]])},
-     :binary, {:packet, 2}, :exit_status, :use_stdio, :hide]
+    all_args = List.flatten([flags, ["--"], [cmd | args]])
+    [{:args, all_args}, :binary, {:packet, 2}, :exit_status, :use_stdio, :hide]
   end
 
   defp get_flags(options) do
-    [case options[:out] do
-      nil  -> ["-out", ""]
-      :err -> ["-out", "err"]
-      _    -> []
-    end
-    |
-    case options[:err] do
-      nil  -> ["-err", ""]
-      :out -> ["-err", "out"]
-      _    -> []
-    end]
+    [
+      ["-proto", "2l"],
+
+      case options[:out] do
+        nil  -> ["-out", ""]
+        :err -> ["-out", "err"]
+        _    -> []
+      end,
+
+      case options[:err] do
+        nil  -> ["-err", ""]
+        :out -> ["-err", "out"]
+        _    -> []
+      end
+    ]
   end
 
   defp open_port(opts) do
