@@ -79,7 +79,7 @@ defmodule Porc do
       {:error, _} -> false
       _ -> true
     end)
-    |> Enum.each(Port.command(port, &1))
+    |> Enum.each(&Port.command(port, &1))
   end
 
   # Runs in a recursive loop until the process exits
