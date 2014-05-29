@@ -1,8 +1,10 @@
 defmodule Porc do
-  defrecord Process, [:status, :in, :out, :err]
+  defstruct [:status, :in, :out, :err]
+
+  alias __MODULE__, as: Process
 
   def send(pid, data) do
-    pid <- {:data, data}
+    Kernel.send(pid, {:data, data})
   end
 
   @doc """
@@ -133,7 +135,7 @@ defmodule Porc do
   end
 
   defp process_port_output({ pid, ref }=a, in_data, type) when is_pid(pid) do
-    pid <- { ref, type, in_data }
+    Kernel.send(pid, { ref, type, in_data })
     a
   end
 
@@ -141,8 +143,7 @@ defmodule Porc do
   # binary from it
   defp flatten({:buffer, iolist}) do
     #IO.puts "Flattening an io list #{inspect iolist}"
-    {:ok, bin} = String.from_char_list iolist
-    bin
+    IO.chardata_to_string iolist
   end
 
   defp flatten({:path, a, fid}) do
@@ -169,14 +170,14 @@ defmodule Porc do
                                      and is_list(args)
                                      and is_list(options) do
     {port, input, output, error} = init_port_connection(cmd, args, options)
-    proc = Process[in: input, out: output, err: error]
+    proc = %Process{in: input, out: output, err: error}
     parent = self
     pid = Kernel.spawn(fn -> do_loop(port, proc, parent) end)
     #Port.connect port, pid
     {pid, port}
   end
 
-  defp do_loop(port, proc=Process[in: in_opt], parent) do
+  defp do_loop(port, proc=%Process{in: in_opt}, parent) do
     Port.connect port, self
     if in_opt != :pid do
       send_input(port, in_opt)
@@ -184,23 +185,23 @@ defmodule Porc do
     exchange_data(port, proc, parent)
   end
 
-  defp exchange_data(port, proc=Process[in: input, out: output, err: error], parent) do
+  defp exchange_data(port, proc=%Process{in: input, out: output, err: error}, parent) do
     receive do
       { ^port, {:data, <<?o, data :: binary>>} } ->
         #IO.puts "Did receive out"
         output = process_port_output(output, data, :stdout)
-        exchange_data(port, proc.out(output), parent)
+        exchange_data(port, %{proc|out: output}, parent)
 
       { ^port, {:data, <<?e, data :: binary>>} } ->
         #IO.puts "Did receive err"
         error = process_port_output(error, data, :stderr)
-        exchange_data(port, proc.err(error), parent)
+        exchange_data(port, %{proc|err: error}, parent)
 
       { ^port, {:exit_status, status} } ->
-        parent <- {self, Process[status: status,
-                                 in: input,
-                                 out: flatten(output),
-                                 err: flatten(error)]}
+        Kernel.send(parent, {self, %Process{status: status,
+                                            in: input,
+                                            out: flatten(output),
+                                            err: flatten(error)}})
 
       { :data, :eof } ->
         Port.command(port, "")

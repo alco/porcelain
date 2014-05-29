@@ -2,10 +2,9 @@ defmodule Porcelain.Mixfile do
   use Mix.Project
 
   def project do
-    [ app: :porcelain,
-      version: "0.0.1",
-      elixir: "~> 0.11.1-dev",
-      deps: deps ]
+    [app: :porcelain,
+     version: "0.0.2",
+     elixir: "~> 0.14.0-dev"]
   end
 
   # Configuration for the OTP application
@@ -13,9 +12,6 @@ defmodule Porcelain.Mixfile do
     []
   end
 
-  # Returns the list of dependencies in the format:
-  # { :foobar, "~> 0.1", git: "https://github.com/elixir-lang/foobar.git" }
-  defp deps do
-    []
-  end
+  # no deps
+  # --alco
 end
