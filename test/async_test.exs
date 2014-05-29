@@ -1,5 +1,7 @@
-defmodule PorcAsyncOutputsTest do
+defmodule PorcelainAsyncOutputsTest do
   use ExUnit.Case, async: true
+
+  alias Porcelain, as: Porc
 
   test "cat no input" do
     {pid, port} = Porc.spawn("cat")
@@ -119,8 +121,10 @@ defmodule PorcAsyncOutputsTest do
   end
 end
 
-defmodule PorcAsyncRedirectsTest do
+defmodule PorcelainAsyncRedirectsTest do
   use ExUnit.Case, async: true
+
+  alias Porcelain, as: Porc
 
   test "cat stdout to stderr /dev/null" do
     {pid, _} = Porc.spawn("cat", in: "Hello world!", out: :err)

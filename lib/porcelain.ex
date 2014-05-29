@@ -1,4 +1,15 @@
-defmodule Porc do
+# Public API:
+#
+# ** async **
+#
+#   - spawn
+#   - send
+#
+# ** sync **
+#
+#   - call
+#
+defmodule Porcelain do
   defstruct [:status, :in, :out, :err]
 
   alias __MODULE__, as: Process
