@@ -67,9 +67,9 @@ defmodule Porcelain.Driver.Simple do
         pipe_file(fid, port)
 
       {:path, path} ->
-        File.open path, [:read], fn(fid) ->
+        File.open(path, [:read], fn(fid) ->
           pipe_file(fid, port)
-        end
+        end)
 
       _ -> nil
     end

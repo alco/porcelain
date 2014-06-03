@@ -24,7 +24,8 @@ defmodule PorcelainTest.SimpleTest do
 
   test "stderr" do
     cmd = {"date", ["rubbish"]}
-    assert exec(cmd, out: nil, err: :out) == %Result{out: nil, err: :out, status: 1}
+    assert exec(cmd, out: nil, err: :out)
+           == %Result{out: nil, err: :out, status: 1}
 
     result = exec(cmd, err: :out)
     assert %Result{out: <<_::binary>>, err: :out, status: 1} = result

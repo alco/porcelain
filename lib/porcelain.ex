@@ -1,40 +1,92 @@
 defmodule Porcelain do
+
   defmodule Result do
+    @moduledoc """
+    A struct containing the result of running an external program after it has
+    terminated.
+    """
     defstruct [:status, :out, :err]
   end
 
   @doc """
-  Takes a shell invocation and produces a tuple `{ cmd, args }` suitable for
-  use in `exec()` and `spawn()` functions. The format of the invocation should
-  conform to POSIX shell specification.
+  The `cmdspec` type represents a command to run. It can denote either a shell
+  invocation or a program name.
 
-  TODO: define behaviour of env variables, pipes, redirects
+  When it is a binary, it will be interpreted as a shell command. Porcelain
+  will spawn a system shell and pass the whole string to it.
 
-  ## Examples
+  This allows using shell features like setting variables, chaining multiple
+  programs with pipes, etc. The downside is that those advanced features may
+  be unavailable on some platforms.
 
-      iex> Porcelain.shplit(~s(echo "Multiple arguments" in one line))
-      {"echo", ["Multiple arguments", "in", "one", "line"]}
-
+  When `cmdspec` is a tuple `{cmd, args}`, Porcelain will look for the command
+  in PATH and launch it directly, passing the `args` list as command-line
+  arguments to it.
   """
-  def shplit(invocation) when is_binary(invocation) do
-    case String.split(invocation, " ", global: false) do
-      [cmd, rest] ->
-        { cmd, split(rest) }
-      [cmd] ->
-        { cmd, [] }
-    end
-  end
-
-  # This splits the list of arguments with the command name already stripped
-  defp split(args) when is_binary(args) do
-    String.split args, " "
-  end
+  @type cmdspec :: binary | {binary, [binary]}
 
   @doc """
-  Executes the command synchronously.
+  Execute the command synchronously.
+
+  Feeds all input into the program, then waits for it to terminate. Returns a
+  `Result` struct containing program's output and exit status code.
+
+  When no options are passed, the following defaults will be used:
+
+      [in: "", out: :buffer, err: nil]
+
+  This will run the program with no input and will capture its standard output.
+
+  Available options:
+
+  * `:in` – specify the way input will be passed to the external process.
+
+    Possible values:
+
+    - `<iodata>` – the data is fed into stdin as the sole input for the program
+
+    - `<stream>` – interprets `<stream>` as a stream of iodata to be fed into
+      the program
+
+    - `{:path, <string>}` – path to a file to be fed into stdin
+
+    - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
+      `File.open`; the file will be read from the current position until EOF
+
+
+  * `:out` – specify the way output will be passed back to Elixir.
+
+    Possible values:
+
+    - `nil` – discard the output
+
+    - `:string` (default) – the whole output will be accumulated in memory and
+      returned as one string to the caller
+
+    - `:iodata` – the whole output will be accumulated in memory and returned
+      as iodata to the caller
+
+    - `{:path, <string>}` – the file at path will be created (or truncated) and
+      the output will be written to it
+
+    - `{:append, <string>}` – the output will be appended to the the file at
+      path (it will be created first if needed)
+
+    - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
+      `File.open`; the file will be written to starting at the current position
+
+  * `:err` – specify the way stderr will be passed back to Elixir.
+
+    Possible values are the same as for `:out`. In addition, it accepts the
+    atom `:out` which denotes redirecting stderr to stdout.
+
+    **Caveat**: when `:err` is set to `nil`, stderr will either be printed to
+    the terminal (when using `Porcelain.Driver.Simple`) or will be discarded
+    (with `Porcelain.Driver.Goon`).
+
   """
-  @spec exec(String.t, Keyword.t) :: %Result{}
-  @spec exec({String.t, [String.t]}, Keyword.t) :: %Result{}
+  @spec exec(cmdspec) :: %Result{}
+  @spec exec(cmdspec, Keyword.t) :: %Result{}
 
   def exec(cmdspec, options \\ [])
 
@@ -49,6 +101,38 @@ defmodule Porcelain do
     {common_opts, extra_opts} = compile_options(options)
     driver().exec(cmd, args, common_opts, extra_opts)
   end
+
+
+
+
+
+  #@doc """
+  #Takes a shell invocation and produces a tuple `{ cmd, args }` suitable for
+  #use in `exec()` and `spawn()` functions. The format of the invocation should
+  #conform to POSIX shell specification.
+
+  #TODO: define behaviour of env variables, pipes, redirects
+
+  ### Examples
+
+      #iex> Porcelain.shplit(~s(echo "Multiple arguments" in one line))
+      #{"echo", ["Multiple arguments", "in", "one", "line"]}
+
+  #"""
+  #def shplit(invocation) when is_binary(invocation) do
+    #case String.split(invocation, " ", global: false) do
+      #[cmd, rest] ->
+        #{ cmd, split(rest) }
+      #[cmd] ->
+        #{ cmd, [] }
+    #end
+  #end
+
+  ## This splits the list of arguments with the command name already stripped
+  #defp split(args) when is_binary(args) do
+    #String.split args, " "
+  #end
+
 
   #@file_block_size 1024
 
