@@ -263,7 +263,7 @@ defmodule Porcelain do
   #end
 
   defp compile_options(options) do
-    Enum.reduce(options, {[], []}, fn {name, val}, {good, bad} ->
+    {good, bad} = Enum.reduce(options, {[], []}, fn {name, val}, {good, bad} ->
       compiled = case name do
         :in  -> {:ok, compile_input_opt(val)}
         :out -> {:ok, compile_output_opt(val)}
@@ -275,6 +275,8 @@ defmodule Porcelain do
         {:ok, opt} -> {good ++ [{name, opt}], bad}
       end
     end)
+    good = Keyword.update(good, :out, {:buffer, ""}, &(&1))
+    {good, bad}
   end
 
   defp compile_input_opt(opt) do
@@ -297,7 +299,7 @@ defmodule Porcelain do
 
   defp compile_out_opt(opt, typ) do
     case opt do
-      ^typ                                   -> nil
+      ^typ                                   -> typ
       nil                                    -> nil
       :buffer                                -> {:buffer, ""}
       {:file, fid}=x when is_pid(fid)        -> x

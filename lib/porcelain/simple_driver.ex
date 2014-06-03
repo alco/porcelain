@@ -37,12 +37,19 @@ defmodule Porcelain.Driver.Simple do
     raise RuntimeError, message: "Undefined options: #{inspect extra_opts}"
   end
 
-  defp port_options(:proc, args, _opts),
-    do: [{:args, args} | @common_port_options]
+  defp port_options(:proc, args, opts),
+    do: [{:args, args} | common_port_options(opts)]
 
-  defp port_options(:shell, _opts),
-    do: @common_port_options
+  defp port_options(:shell, opts),
+    do: common_port_options(opts)
 
+  defp common_port_options(opts) do
+    ret = @common_port_options
+    if opts[:err] == :out do
+      ret = [:stderr_to_stdout|ret]
+    end
+    ret
+  end
 
   # Synchronous communication with port
   defp communicate(port, input, output, error) do
