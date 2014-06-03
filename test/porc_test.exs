@@ -95,27 +95,3 @@
 #    Path.join([__DIR__, "output.txt"])
 #  end
 #end
-#
-#defmodule PorcRedirectsTest do
-#  use ExUnit.Case, async: true
-#
-#  test "cat stdout to stderr /dev/null" do
-#    assert {0, nil, nil}
-#           = Porc.call("cat", in: "Hello world!", out: :err)
-#  end
-#
-#  test "cat stdout to stderr buffer" do
-#    assert {0, nil, "Hello world!"}
-#           = Porc.call("cat", in: "Hello world!", out: :err, err: :buffer)
-#  end
-#
-#  test "cat stderr to stdout /dev/null" do
-#    assert {1, nil, nil}
-#           = Porc.call("cat -goo", in: "Hello world!", err: :out)
-#  end
-#
-#  test "cat stderr to stdout buffer" do
-#    assert {1, <<_::binary>>, nil}
-#           = Porc.call("cat -goo", in: "Hello world!", err: :out, out: :buffer)
-#  end
-#end

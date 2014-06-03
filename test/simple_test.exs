@@ -18,7 +18,7 @@ defmodule PorcelainTest.SimpleTest do
     assert exec(cmd) == %Result{out: "\n", err: nil, status: 0}
 
     cmd = {"echo", ["-n", "Hello", "world"]}
-    assert exec(cmd, out: :buffer)
+    assert exec(cmd, out: :string)
            == %Result{out: "Hello world", err: nil, status: 0}
   end
 
@@ -32,17 +32,26 @@ defmodule PorcelainTest.SimpleTest do
     assert result.out =~ ~r/illegal time format/
   end
 
-  test "input" do
+  test "input string" do
     cmd = {"grep", [">end<", "-m", "2"]}
     assert exec(cmd, in: "hi\n>end< once\nbye\n>end< twice\n")
            == %Result{out: ">end< once\n>end< twice\n", err: nil, status: 0}
   end
 
-  test "shell" do
-    cmd = "head -n 4 | tr a-c A-C | sort"
-    input = "Alphabetical\nlist\nof\nlines\n"
-    output = "AlphABetiCAl\nlines\nlist\nof\n"
-    assert exec(cmd, in: input) == %Result{out: output, err: nil, status: 0}
+  test "input iodata" do
+    cmd = {"grep", [">end<", "-m", "2"]}
+    input = ["hi\n", [?>, [?e, ?n], "d< onc"],
+                    "e\nb", ["y", ["e", ?\n], ">end< twice\n"]]
+    assert exec(cmd, in: input)
+           == %Result{out: ">end< once\n>end< twice\n", err: nil, status: 0}
+  end
+
+  test "input stream" do
+    cmd = {"grep", [">end<", "-m", "2"]}
+    input = Stream.concat(["hello", ["th", [?i, ?s], "is \nthe"], [">e"]],
+                          [[[?n, "d<\n"], "again\n"], ">e", "nd< final", ?\n])
+    assert exec(cmd, in: input)
+           == %Result{out: "the>end<\n>end< final\n", err: nil, status: 0}
   end
 
   test "input path" do
@@ -61,6 +70,23 @@ defmodule PorcelainTest.SimpleTest do
     end)
   end
 
+  test "shell" do
+    cmd = "head -n 4 | tr a-c A-C | sort"
+    input = "Alphabetical\nlist\nof\nlines\n"
+    output = "AlphABetiCAl\nlines\nlist\nof\n"
+    assert exec(cmd, in: input) == %Result{out: output, err: nil, status: 0}
+
+    cmd = "head -n 4 >/dev/null"
+    assert exec(cmd, in: input) == %Result{out: "", err: nil, status: 0}
+  end
+
+  test "output iodata" do
+    cmd = "head -n 4 | sort"
+    result = exec(cmd, in: "this\nis\nthe\nend\n", out: :iodata)
+    assert %Result{out: [_|_], err: nil, status: 0} = result
+    assert IO.iodata_to_binary(result.out) == "end\nis\nthe\nthis\n"
+  end
+
   test "output path" do
     cmd = "head -n 4 | sort"
     outpath = Path.join(System.tmp_dir, "tmpoutput")
@@ -68,6 +94,15 @@ defmodule PorcelainTest.SimpleTest do
     assert exec(cmd, in: "this\nis\nthe\nend\n", out: {:path, outpath})
            == %Result{out: {:path, outpath}, err: nil, status: 0}
     assert File.read!(outpath) == "end\nis\nthe\nthis\n"
+  end
+
+  test "output append" do
+    cmd = "head -n 4 | sort"
+    outpath = Path.join(System.tmp_dir, "tmpoutput")
+    File.write!(outpath, "hello.")
+    assert exec(cmd, in: "this\nis\nthe\nend\n", out: {:append, outpath})
+           == %Result{out: {:path, outpath}, err: nil, status: 0}
+    assert File.read!(outpath) == "hello.end\nis\nthe\nthis\n"
   end
 
   test "output file" do

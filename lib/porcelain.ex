@@ -33,7 +33,7 @@ defmodule Porcelain do
 
   When no options are passed, the following defaults will be used:
 
-      [in: "", out: :buffer, err: nil]
+      [in: "", out: :string, err: nil]
 
   This will run the program with no input and will capture its standard output.
 
@@ -359,17 +359,23 @@ defmodule Porcelain do
         {:ok, opt} -> {good ++ [{name, opt}], bad}
       end
     end)
-    good = Keyword.update(good, :out, {:buffer, ""}, &(&1))
+    good = Keyword.update(good, :out, {:string, ""}, &(&1))
     {good, bad}
   end
 
   defp compile_input_opt(opt) do
     case opt do
-      nil                                  -> nil
-      #:pid                                 -> :pid
-      {:file, fid}=x when is_pid(fid)      -> x
-      {:path, path}=x when is_binary(path) -> x
-      bin when is_binary(bin)              -> bin
+      nil                                              -> nil
+      #:pid                                             -> :pid
+      {:file, fid}=x when is_pid(fid)                  -> x
+      {:path, path}=x when is_binary(path)             -> x
+      iodata when is_binary(iodata) or is_list(iodata) -> iodata
+      other ->
+        if Enumerable.impl_for(other) != nil do
+          other
+        else
+          raise RuntimeError, message: "Unsupported input argument"
+        end
     end
   end
 
@@ -385,7 +391,8 @@ defmodule Porcelain do
     case opt do
       ^typ                                   -> typ
       nil                                    -> nil
-      :buffer                                -> {:buffer, ""}
+      :string                                -> {:string, ""}
+      :iodata                                -> {:iodata, ""}
       {:file, fid}=x when is_pid(fid)        -> x
       {:path, path}=x when is_binary(path)   -> x
       {:append, path}=x when is_binary(path) -> x

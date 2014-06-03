@@ -59,8 +59,7 @@ defmodule Porcelain.Driver.Simple do
 
   defp send_input(port, input) do
     case input do
-      bin when is_binary(bin) and byte_size(bin) > 0 ->
-        #IO.puts "sending input #{bin}"
+      iodata when is_binary(iodata) or is_list(iodata) ->
         Port.command(port, input)
 
       {:file, fid} ->
@@ -71,7 +70,9 @@ defmodule Porcelain.Driver.Simple do
           pipe_file(fid, port)
         end)
 
-      _ -> nil
+      nil -> nil
+
+      other -> stream_to_port(other, port)
     end
   end
 
@@ -85,7 +86,11 @@ defmodule Porcelain.Driver.Simple do
       {:error, _} -> false
       _ -> true
     end)
-    |> Enum.each(&Port.command(port, &1))
+    |> stream_to_port(port)
+  end
+
+  defp stream_to_port(enum, port) do
+    Enum.each(enum, &Port.command(port, [&1]))
   end
 
   defp collect_output(port, output, error) do
@@ -107,7 +112,8 @@ defmodule Porcelain.Driver.Simple do
 
 
   defp flatten(nil),  do: nil
-  defp flatten({:buffer, data}), do: IO.iodata_to_binary(data)
+  defp flatten({:string, data}), do: IO.iodata_to_binary(data)
+  defp flatten({:iodata, data}), do: data
   defp flatten({:path, path, _}), do: {:path, path}
   defp flatten(other), do: other
 
@@ -117,8 +123,10 @@ defmodule Porcelain.Driver.Simple do
     #raise RuntimeError, message: "Unexpected data on client's end"
   end
 
-  defp process_port_output({:buffer, data}, new_data) do
-    {:buffer, [data, new_data]}
+  defp process_port_output({typ, data}, new_data)
+    when typ in [:string, :iodata]
+  do
+    {typ, [data, new_data]}
   end
 
   defp process_port_output({:file, fid}=x, new_data) do
