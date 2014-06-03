@@ -43,4 +43,41 @@ defmodule PorcelainTest.SimpleTest do
     output = "AlphABetiCAl\nlines\nlist\nof\n"
     assert exec(cmd, in: input) == %Result{out: output, err: nil, status: 0}
   end
+
+  test "input path" do
+    cmd = "head -n 3 | sort"
+    path = Path.expand("fixtures/input.txt", __DIR__)
+    assert exec(cmd, in: {:path, path})
+           == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}
+  end
+
+  test "input file" do
+    cmd = "head -n 3 | sort"
+    path = Path.expand("fixtures/input.txt", __DIR__)
+    File.open(path, fn file ->
+      assert exec(cmd, in: {:file, file})
+             == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}
+    end)
+  end
+
+  test "output path" do
+    cmd = "head -n 4 | sort"
+    outpath = Path.join(System.tmp_dir, "tmpoutput")
+    File.rm_rf!(outpath)
+    assert exec(cmd, in: "this\nis\nthe\nend\n", out: {:path, outpath})
+           == %Result{out: {:path, outpath}, err: nil, status: 0}
+    assert File.read!(outpath) == "end\nis\nthe\nthis\n"
+  end
+
+  test "output file" do
+    cmd = "head -n 3 | sort"
+    inpath = Path.expand("fixtures/input.txt", __DIR__)
+    outpath = Path.join(System.tmp_dir, "tmpoutput")
+    File.rm_rf!(outpath)
+    File.open(outpath, [:write], fn file ->
+      assert exec(cmd, in: {:path, inpath}, out: {:file, file})
+             == %Result{out: {:file, file}, err: nil, status: 0}
+    end)
+    assert File.read!(outpath) == "file\nfrom\ninput\n"
+  end
 end

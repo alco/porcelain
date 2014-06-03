@@ -108,6 +108,7 @@ defmodule Porcelain.Driver.Simple do
 
   defp flatten(nil),  do: nil
   defp flatten({:buffer, data}), do: IO.iodata_to_binary(data)
+  defp flatten({:path, path, _}), do: {:path, path}
   defp flatten(other), do: other
 
 
