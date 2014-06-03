@@ -3,13 +3,13 @@ defmodule Porcelain.Driver.Simple do
   Porcelain driver that offers basic functionality for interacting with
   external programs.
 
-  Some of the provided features:
+  This driver has two major limitations compared to `Porcelain.Driver.Goon`:
 
-    * spawn one-off or long-running programs
-    * add external programs to Elixir's supervision trees
-    * balance between multiple instances of external program
-    * specify maximum number of program instances allowed
-    * rate limiting of input and output
+  * the `exec` function does not work with programs that read all input until
+    EOF. Such programs will hang since Erlang ports don't provide any mechanism
+    to indicate the end of input.
+
+  * sending OS signals to external processes is not supported
 
   """
 
@@ -110,17 +110,17 @@ defmodule Porcelain.Driver.Simple do
     end
   end
 
-
-  defp flatten(nil),  do: nil
-  defp flatten({:string, data}), do: IO.iodata_to_binary(data)
-  defp flatten({:iodata, data}), do: data
-  defp flatten({:path, path, _}), do: {:path, path}
-  defp flatten(other), do: other
-
+  defp flatten(thing) do
+    case thing do
+      {:string, data}  -> IO.iodata_to_binary(data)
+      {:iodata, data}  -> data
+      {:path, path, _} -> {:path, path}
+      other            -> other
+    end
+  end
 
   defp process_port_output(nil, _) do
     nil
-    #raise RuntimeError, message: "Unexpected data on client's end"
   end
 
   defp process_port_output({typ, data}, new_data)
