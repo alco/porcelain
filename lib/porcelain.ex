@@ -13,7 +13,7 @@ defmodule Porcelain do
     A struct representing an OS processes which provides the ability to
     exchange data between Porcelain and the process.
     """
-    defstruct [:in, :out, :err]
+    defstruct [:port, :out, :err]
   end
 
   @doc """
@@ -119,17 +119,18 @@ defmodule Porcelain do
   Spawn an external process and return a `Process` struct to be able to
   communicate with it.
 
-  Supports all options defined for `exec` plus some additional ones:
+  Supports all options defined for `exec/2` plus some additional ones:
 
-  * `in: :receive` – input is expected to be sent to the process via Elixir
-    messages. End of input is indicated by sending an empty message.
-
-    **Caveat**: when using `Porcelain.Driver.Simple`, it is not possible to
-    indicate the end of input. You should close the port explicitly using
-    `close/1`.
+  * `in: :receive` – input is expected to be sent to the process in chunks
+    using the `send/2` function.
 
   * `out: :stream` – the `:out` field of the returned `Process` struct will
     contain a stream of iodata.
+
+    Note that the underlying port implementation is message based. This means
+    that the external program will be able to send all of its output to an
+    Elixir process and terminate. The data will be kept in the Elixir process'
+    message box until the stream is consumed.
 
   * `err: :stream` – same as `:out`, but will return stderr as a stream.
 
@@ -151,6 +152,42 @@ defmodule Porcelain do
     catch_wrapper fn ->
       driver().spawn(cmd, args, compile_spawn_options(options))
     end
+  end
+
+  @doc """
+  Send iodata to the process' stdin.
+
+  End of input is indicated by sending an empty message.
+
+  **Caveat**: when using `Porcelain.Driver.Simple`, it is not possible to
+  indicate the end of input. You should close the port explicitly using
+  `close/1`.
+  """
+  @spec send(%Process{}, iodata) :: iodata
+
+  def send(%Process{port: port}, data) do
+    Port.command(port, data)
+  end
+
+  @doc """
+  Check if the underlying port is closed.
+  """
+  @spec closed?(%Process{}) :: true | false
+
+  def closed?(%Process{port: port}) do
+    Port.info(port) == :undefined
+  end
+
+  @doc """
+  Closes the port to the external process created with `spawn/2`.
+
+  Depending on the driver in use, this may or may not terminate the external
+  process.
+  """
+  @spec close(%Process{}) :: true
+
+  def close(%Process{port: port}) do
+    Port.close(port)
   end
 
   defp catch_wrapper(fun) do
@@ -317,7 +354,9 @@ defmodule Porcelain do
         {:ok, opt} -> {good ++ [{name, opt}], bad}
       end
     end)
-    good = Keyword.update(good, :out, {:string, ""}, &(&1))
+    if not Keyword.has_key?(options, :out) do
+      good = Keyword.put(good, :out, {:string, ""})
+    end
     {good, bad}
   end
 

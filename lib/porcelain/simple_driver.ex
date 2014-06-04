@@ -20,6 +20,8 @@ defmodule Porcelain.Driver.Simple do
 
   """
 
+  alias Porcelain.Driver.Simple.StreamServer
+
   def exec(cmd, args, opts) do
     do_exec(cmd, args, opts, :noshell)
   end
@@ -41,25 +43,39 @@ defmodule Porcelain.Driver.Simple do
 
   defp do_exec(cmd, args, opts, shell_flag) do
     opts = compile_options(opts)
-    if exe=find_executable(cmd, shell_flag) do
-      port = Port.open(exe, port_options(shell_flag, args, opts))
-      communicate(port, opts[:async_in], opts[:in], opts[:out], opts[:err])
-    else
-      throw "Command not found: #{cmd}"
-    end
+    exe = find_executable(cmd, shell_flag)
+    port = Port.open(exe, port_options(shell_flag, args, opts))
+    communicate(port, opts[:async_in], opts[:in], opts[:out], opts[:err])
   end
 
   defp do_spawn(cmd, args, opts, shell_flag) do
     opts = compile_options(opts)
     exe = find_executable(cmd, shell_flag)
     port = Port.open(exe, port_options(shell_flag, args, opts))
-    _pid = spawn(fn -> proc_loop(port, opts[:in], opts[:out], opts[:err]) end)
-    %Porcelain.Process{}
+
+    out_opt = opts[:out]
+    if out_opt == :stream do
+      {:ok, server} = StreamServer.start()
+      out_opt = {:stream, server}
+    end
+
+    pid = spawn(fn ->
+      communicate(port, true, opts[:in], out_opt, opts[:err])
+    end)
+    Port.connect(port, pid)
+    :erlang.unlink(port)
+
+    out_ret = case out_opt do
+      {:stream, server} -> Stream.unfold(server, &read_stream/1)
+      _                 -> out_opt
+    end
+    %Porcelain.Process{port: port, out: out_ret, err: opts[:err]}
   end
 
 
-  defp compile_options({opts, []}),
-    do: opts
+  defp compile_options({opts, []}) do
+    opts
+  end
 
   defp compile_options({_opts, extra_opts}),
     do: throw "Invalid options: #{inspect extra_opts}"
@@ -68,6 +84,8 @@ defmodule Porcelain.Driver.Simple do
   def find_executable(cmd, :noshell) do
     if exe=:os.find_executable(:erlang.binary_to_list(cmd)) do
       {:spawn_executable, exe}
+    else
+      throw "Command not found: #{cmd}"
     end
   end
 
@@ -101,9 +119,6 @@ defmodule Porcelain.Driver.Simple do
     collect_output(port, output, error)
   end
 
-  defp proc_loop(_port, _input, _output, _error) do
-  end
-
   defp send_input(port, input) do
     case input do
       iodata when is_binary(iodata) or is_list(iodata) ->
@@ -117,12 +132,20 @@ defmodule Porcelain.Driver.Simple do
           pipe_file(fid, port)
         end)
 
-      nil -> nil
+      null when null in [nil, :receive] ->
+        nil
 
       other -> stream_to_port(other, port)
     end
     ## Send EOF to indicate the end of input or no input
     #Port.command(port, "")
+  end
+
+  defp read_stream(server) do
+    case StreamServer.get_data(server) do
+      nil -> nil
+      data -> {data, server}
+    end
   end
 
   # we read files in blocks to avoid excessive memory usage
@@ -148,10 +171,8 @@ defmodule Porcelain.Driver.Simple do
   end
 
   defp collect_output(port, output, error) do
-    #IO.puts "Collecting output"
     receive do
       { ^port, {:data, data} } ->
-        #IO.puts "Did receive out"
         output = process_port_output(output, data)
         collect_output(port, output, error)
 
@@ -175,23 +196,28 @@ defmodule Porcelain.Driver.Simple do
     {typ, [data, new_data]}
   end
 
-  defp process_port_output({:file, fid}=x, new_data) do
-    :ok = IO.write(fid, new_data)
+  defp process_port_output({:file, fid}=x, data) do
+    :ok = IO.write(fid, data)
     x
   end
 
-  defp process_port_output({:path, path}, new_data) do
+  defp process_port_output({:path, path}, data) do
     {:ok, fid} = File.open(path, [:write])
-    process_port_output({:path, path, fid}, new_data)
+    process_port_output({:path, path, fid}, data)
   end
 
-  defp process_port_output({:append, path}, new_data) do
+  defp process_port_output({:append, path}, data) do
     {:ok, fid} = File.open(path, [:append])
-    process_port_output({:path, path, fid}, new_data)
+    process_port_output({:path, path, fid}, data)
   end
 
   defp process_port_output({:path, _, fid}=x, data) do
     :ok = IO.write(fid, data)
+    x
+  end
+
+  defp process_port_output({:stream, server}=x, new_data) do
+    StreamServer.put_data(server, new_data)
     x
   end
 
@@ -205,6 +231,7 @@ defmodule Porcelain.Driver.Simple do
       {:string, data}    -> IO.iodata_to_binary(data)
       {:iodata, data}    -> data
       {:path, path, fid} -> File.close(fid); {:path, path}
+      {:stream, server}  -> StreamServer.finish(server)
       other              -> other
     end
   end
