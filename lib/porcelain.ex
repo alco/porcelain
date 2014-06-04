@@ -8,6 +8,14 @@ defmodule Porcelain do
     defstruct [:status, :out, :err]
   end
 
+  defmodule Process do
+    @moduledoc """
+    A struct representing an OS processes which provides the ability to
+    exchange data between Porcelain and the process.
+    """
+    defstruct [:in, :out, :err]
+  end
+
   @doc """
   The `cmdspec` type represents a command to run. It can denote either a shell
   invocation or a program name.
@@ -88,23 +96,60 @@ defmodule Porcelain do
   @spec exec(cmdspec) :: %Result{}
   @spec exec(cmdspec, Keyword.t) :: %Result{}
 
-  def exec(cmdspec, options \\ [])
+  def exec(cmd, options \\ [])
 
-  def exec(cmd, options) when is_binary(cmd) do
-    {common_opts, extra_opts} = compile_options(options)
-    driver().exec_shell(cmd, common_opts, extra_opts)
+  def exec(cmd, options) when is_binary(cmd) and is_list(options) do
+    catch_wrapper fn ->
+      driver().exec_shell(cmd, compile_options(options))
+    end
   end
 
   def exec({cmd, args}, options)
     when is_binary(cmd) and is_list(args) and is_list(options)
   do
-    {common_opts, extra_opts} = compile_options(options)
-    driver().exec(cmd, args, common_opts, extra_opts)
+    catch_wrapper fn ->
+      driver().exec(cmd, args, compile_options(options))
+    end
   end
 
 
+  @doc """
+  Spawn an external process and return a `Process` struct to be able to
+  communicate with it.
+  """
+  @spec spawn(cmdspec) :: %Process{}
+  @spec spawn(cmdspec, Keyword.t) :: %Process{}
 
+  def spawn(cmd, options \\ [])
 
+  def spawn(cmd, options) when is_binary(cmd) and is_list(options) do
+    catch_wrapper fn ->
+      driver().spawn_shell(cmd, compile_options(options))
+    end
+  end
+
+  def spawn({cmd, args}, options)
+    when is_binary(cmd) and is_list(args) and is_list(options)
+  do
+    catch_wrapper fn ->
+      driver().spawn(cmd, args, compile_options(options))
+    end
+  end
+
+  defp catch_wrapper(fun) do
+    try do
+      fun.()
+    catch
+      :throw, thing -> {:error, thing}
+    end
+  end
+
+    #{port, input, output, error} = init_port_connection(cmd, args, options)
+    #proc = %Process{in: input, out: output, err: error}
+    #parent = self
+    #pid = Kernel.spawn(fn -> do_loop(port, proc, parent) end)
+    ##Port.connect port, pid
+    #{pid, port}
 
   #@doc """
   #Takes a shell invocation and produces a tuple `{ cmd, args }` suitable for
@@ -244,26 +289,6 @@ defmodule Porcelain do
     #other
   #end
 
-  #@doc """
-  #Spawn an external process and returns `Process` record ready for
-  #communication.
-  #"""
-  #def spawn(cmdspec, options \\ [])
-
-  #def spawn(cmd, options) when is_binary(cmd) do
-    #spawn(shplit(cmd), options)
-  #end
-
-  #def spawn({ cmd, args }, options) when is_binary(cmd)
-                                     #and is_list(args)
-                                     #and is_list(options) do
-    #{port, input, output, error} = init_port_connection(cmd, args, options)
-    #proc = %Process{in: input, out: output, err: error}
-    #parent = self
-    #pid = Kernel.spawn(fn -> do_loop(port, proc, parent) end)
-    ##Port.connect port, pid
-    #{pid, port}
-  #end
 
   #defp do_loop(port, proc=%Process{in: in_opt}, parent) do
     #Port.connect port, self

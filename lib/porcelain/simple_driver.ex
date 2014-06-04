@@ -3,45 +3,80 @@ defmodule Porcelain.Driver.Simple do
   Porcelain driver that offers basic functionality for interacting with
   external programs.
 
+  Users are not supposed to call functions in this module directly. Use
+  functions in `Porcelain` instead.
+
   This driver has two major limitations compared to `Porcelain.Driver.Goon`:
 
   * the `exec` function does not work with programs that read all input until
-    EOF. Such programs will hang since Erlang ports don't provide any mechanism
-    to indicate the end of input.
+    EOF before producing any output. Such programs will hang since Erlang ports
+    don't provide any mechanism to indicate the end of input.
+
+    If a program is continuously consuming input and producing output, it could
+    work with the `spawn` function, but you'll also have to explicitly close
+    the connection with the external program when you're done with it.
 
   * sending OS signals to external processes is not supported
 
   """
 
-  @common_port_options [:binary, :stream, :exit_status, :use_stdio, :hide]
+  def exec(cmd, args, opts) do
+    do_exec(cmd, args, opts, :noshell)
+  end
 
-  def exec(cmd, args, opts, extra_opts) do
-    opts = compile_options(opts, extra_opts)
-    exe = :os.find_executable(:erlang.binary_to_list(cmd))
-    port = Port.open({:spawn_executable, exe},
-                     port_options(:proc, args, opts))
+  def exec_shell(cmd, opts) do
+    do_exec(cmd, nil, opts, :shell)
+  end
+
+
+  def spawn(cmd, args, opts) do
+    do_spawn(cmd, args, opts, :noshell)
+  end
+
+  def spawn_shell(cmd, opts) do
+    do_spawn(cmd, nil, opts, :shell)
+  end
+
+  ###
+
+  defp do_exec(cmd, args, opts, shell_flag) do
+    opts = compile_options(opts)
+    exe = find_executable(cmd, shell_flag)
+    port = Port.open(exe, port_options(shell_flag, args, opts))
     communicate(port, opts[:in], opts[:out], opts[:err])
   end
 
-  def exec_shell(cmd, opts, extra_opts) do
-    opts = compile_options(opts, extra_opts)
-    port = Port.open({:spawn, cmd}, port_options(:shell, opts))
-    communicate(port, opts[:in], opts[:out], opts[:err])
+  defp do_spawn(cmd, args, opts, shell_flag) do
+    opts = compile_options(opts)
+    exe = find_executable(cmd, shell_flag)
+    port = Port.open(exe, port_options(shell_flag, args, opts))
+    _pid = spawn(fn -> proc_loop(port, opts[:in], opts[:out], opts[:err]) end)
+    %Porcelain.Process{}
   end
 
-  defp compile_options(opts, []) do
-    opts
-  end
 
-  defp compile_options(_opts, extra_opts) do
-    raise RuntimeError, message: "Undefined options: #{inspect extra_opts}"
-  end
+  defp compile_options({opts, []}),
+    do: opts
 
-  defp port_options(:proc, args, opts),
+  defp compile_options({_opts, extra_opts}),
+    do: throw "Undefined options: #{inspect extra_opts}"
+
+
+  def find_executable(cmd, :noshell),
+    do: {:spawn_executable, :os.find_executable(:erlang.binary_to_list(cmd))}
+
+  def find_executable(cmd, :shell),
+    do: {:spawn, cmd}
+
+
+  defp port_options(:noshell, args, opts),
     do: [{:args, args} | common_port_options(opts)]
 
-  defp port_options(:shell, opts),
+  defp port_options(:shell, _, opts),
     do: common_port_options(opts)
+
+
+  @common_port_options [:binary, :stream, :exit_status, :use_stdio, :hide]
 
   defp common_port_options(opts) do
     ret = @common_port_options
@@ -51,10 +86,12 @@ defmodule Porcelain.Driver.Simple do
     ret
   end
 
-  # Synchronous communication with port
   defp communicate(port, input, output, error) do
     send_input(port, input)
     collect_output(port, output, error)
+  end
+
+  defp proc_loop(_port, _input, _output, _error) do
   end
 
   defp send_input(port, input) do
@@ -82,9 +119,9 @@ defmodule Porcelain.Driver.Simple do
   defp pipe_file(fid, port) do
     Stream.repeatedly(fn -> IO.read(fid, @file_block_size) end)
     |> Stream.take_while(fn
-      :eof -> false
+      :eof        -> false
       {:error, _} -> false
-      _ -> true
+      _           -> true
     end)
     |> stream_to_port(port)
   end
@@ -110,14 +147,6 @@ defmodule Porcelain.Driver.Simple do
     end
   end
 
-  defp flatten(thing) do
-    case thing do
-      {:string, data}  -> IO.iodata_to_binary(data)
-      {:iodata, data}  -> data
-      {:path, path, _} -> {:path, path}
-      other            -> other
-    end
-  end
 
   defp process_port_output(nil, _) do
     nil
@@ -153,4 +182,13 @@ defmodule Porcelain.Driver.Simple do
     #Kernel.send(pid, { ref, type, in_data })
     #a
   #end
+
+  defp flatten(thing) do
+    case thing do
+      {:string, data}  -> IO.iodata_to_binary(data)
+      {:iodata, data}  -> data
+      {:path, path, _} -> {:path, path}
+      other            -> other
+    end
+  end
 end
