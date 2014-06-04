@@ -124,6 +124,10 @@ defmodule Porcelain do
   * `in: :receive` – input is expected to be sent to the process via Elixir
     messages. End of input is indicated by sending an empty message.
 
+    **Caveat**: when using `Porcelain.Driver.Simple`, it is not possible to
+    indicate the end of input. You should close the port explicitly using
+    `close/1`.
+
   * `out: :stream` – the `:out` field of the returned `Process` struct will
     contain a stream of iodata.
 
@@ -300,8 +304,8 @@ defmodule Porcelain do
     {good, bad} = Enum.reduce(options, {[], []}, fn {name, val}, {good, bad} ->
       compiled = case name do
         :in  -> compile_input_opt(val)
-        :out -> {:ok, compile_output_opt(val)}
-        :err -> {:ok, compile_error_opt(val)}
+        :out -> compile_output_opt(val)
+        :err -> compile_error_opt(val)
         :async_in ->
           if val in [true, false] do
             {:ok, val}
@@ -361,7 +365,7 @@ defmodule Porcelain do
   end
 
   defp compile_out_opt(opt, typ) do
-    case opt do
+    result = case opt do
       ^typ                                   -> typ
       nil                                    -> nil
       :string                                -> {:string, ""}
@@ -370,6 +374,10 @@ defmodule Porcelain do
       {:path, path}=x when is_binary(path)   -> x
       {:append, path}=x when is_binary(path) -> x
       #{pid, ref} when is_pid(pid) -> { pid, ref }
+      _ -> :badval
+    end
+    if result != :badval do
+      {:ok, result}
     end
   end
 
