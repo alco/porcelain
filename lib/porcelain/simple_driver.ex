@@ -116,6 +116,8 @@ defmodule Porcelain.Driver.Simple do
 
       other -> stream_to_port(other, port)
     end
+    ## Send EOF to indicate the end of input or no input
+    #Port.command(port, "")
   end
 
   # we read files in blocks to avoid excessive memory usage

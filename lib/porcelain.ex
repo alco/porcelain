@@ -120,6 +120,12 @@ defmodule Porcelain do
   @doc """
   Spawn an external process and return a `Process` struct to be able to
   communicate with it.
+
+  Supports all options defined for `exec` plus some additional ones:
+
+  * `in: :receive` – input will be sent to the process via Elixir messages. End
+    of input is indicated by sending an empty message.
+
   """
   @spec spawn(cmdspec) :: %Process{}
   @spec spawn(cmdspec, Keyword.t) :: %Process{}
@@ -183,44 +189,6 @@ defmodule Porcelain do
   #end
 
 
-  #@file_block_size 1024
-
-  #defp send_input(port, input) do
-    #case input do
-      #bin when is_binary(bin) and byte_size(bin) > 0 ->
-        ##IO.puts "sending input #{bin}"
-        #Port.command(port, input)
-
-      #{:file, fid} ->
-        #pipe_file(fid, port)
-
-      #{:path, path} ->
-        #File.open path, [:read], fn(fid) ->
-          #pipe_file(fid, port)
-        #end
-
-      #_ -> nil
-    #end
-    ## Send EOF to indicate the end of input or no input
-    #Port.command(port, "")
-  #end
-
-  ## Synchronous communication with a port
-  #defp communicate(port, input, output, error) do
-    #send_input(port, input)
-    #collect_output(port, output, error)
-  #end
-
-  #defp pipe_file(fid, port) do
-    #Stream.repeatedly(fn -> IO.read(fid, @file_block_size) end)
-    #|> Stream.take_while(fn
-      #:eof -> false
-      #{:error, _} -> false
-      #_ -> true
-    #end)
-    #|> Enum.each(&Port.command(port, &1))
-  #end
-
   ## Runs in a recursive loop until the process exits
   #defp collect_output(port, output, error) do
     ##IO.puts "Collecting output"
@@ -241,56 +209,6 @@ defmodule Porcelain do
       ##{ ^port, :eof } ->
         ##collect_output(port, output, out_data, err_data, true, did_see_exit, status)
     #end
-  #end
-
-  #defp process_port_output(nil, _, _) do
-    #raise RuntimeError, message: "Unexpected data on client's end"
-  #end
-
-  #defp process_port_output({ :buffer, out_data }, in_data, _) do
-    #{:buffer, [out_data, in_data]}
-  #end
-
-  #defp process_port_output({ :file, fid }=a, in_data, _) do
-    #:ok = IO.write fid, in_data
-    #a
-  #end
-
-  #defp process_port_output({ :path, path}=a, in_data, _) do
-    #{:ok, fid} = File.open(path, [:write])
-    #process_port_output({ :path, a, fid }, in_data, nil)
-  #end
-
-  #defp process_port_output({ :append, path}=a, in_data, _) do
-    #{:ok, fid} = File.open(path, [:append])
-    #process_port_output({ :path, a, fid }, in_data, nil)
-  #end
-
-  #defp process_port_output({ :path, _, fid}=a, in_data, _) do
-    #:ok = IO.write fid, in_data
-    #a
-  #end
-
-  #defp process_port_output({ pid, ref }=a, in_data, type) when is_pid(pid) do
-    #Kernel.send(pid, { ref, type, in_data })
-    #a
-  #end
-
-  ## Takes the output which is a nested list of binaries and produces a single
-  ## binary from it
-  #defp flatten({:buffer, iolist}) do
-    ##IO.puts "Flattening an io list #{inspect iolist}"
-    #IO.chardata_to_string iolist
-  #end
-
-  #defp flatten({:path, a, fid}) do
-    #:ok = File.close(fid)
-    #a
-  #end
-
-  #defp flatten(other) do
-    ##IO.puts "Flattening #{inspect other}"
-    #other
   #end
 
 
