@@ -185,10 +185,10 @@ defmodule Porcelain.Driver.Simple do
 
   defp flatten(thing) do
     case thing do
-      {:string, data}  -> IO.iodata_to_binary(data)
-      {:iodata, data}  -> data
-      {:path, path, _} -> {:path, path}
-      other            -> other
+      {:string, data}    -> IO.iodata_to_binary(data)
+      {:iodata, data}    -> data
+      {:path, path, fid} -> File.close(fid); {:path, path}
+      other              -> other
     end
   end
 end
