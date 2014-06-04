@@ -65,7 +65,6 @@ defmodule Porcelain do
     will be spawned to feed input to the external process concurrently with
     receiving output.
 
-
   * `:out` – specify the way output will be passed back to Elixir.
 
     Possible values:
@@ -92,9 +91,8 @@ defmodule Porcelain do
     Possible values are the same as for `:out`. In addition, it accepts the
     atom `:out` which denotes redirecting stderr to stdout.
 
-    **Caveat**: when `:err` is set to `nil`, stderr will either be printed to
-    the terminal (when using `Porcelain.Driver.Simple`) or will be discarded
-    (with `Porcelain.Driver.Goon`).
+    **Caveat**: when using `Porcelain.Driver.Simple`, the only supported values
+    are `nil` (stderr will be printed to the terminal) and `:out`.
 
   """
   @spec exec(cmdspec) :: %Result{}
@@ -104,7 +102,7 @@ defmodule Porcelain do
 
   def exec(cmd, options) when is_binary(cmd) and is_list(options) do
     catch_wrapper fn ->
-      driver().exec_shell(cmd, compile_options(options))
+      driver().exec_shell(cmd, compile_exec_options(options))
     end
   end
 
@@ -112,7 +110,7 @@ defmodule Porcelain do
     when is_binary(cmd) and is_list(args) and is_list(options)
   do
     catch_wrapper fn ->
-      driver().exec(cmd, args, compile_options(options))
+      driver().exec(cmd, args, compile_exec_options(options))
     end
   end
 
@@ -123,8 +121,13 @@ defmodule Porcelain do
 
   Supports all options defined for `exec` plus some additional ones:
 
-  * `in: :receive` – input will be sent to the process via Elixir messages. End
-    of input is indicated by sending an empty message.
+  * `in: :receive` – input is expected to be sent to the process via Elixir
+    messages. End of input is indicated by sending an empty message.
+
+  * `out: :stream` – the `:out` field of the returned `Process` struct will
+    contain a stream of iodata.
+
+  * `err: :stream` – same as `:out`, but will return stderr as a stream.
 
   """
   @spec spawn(cmdspec) :: %Process{}
@@ -134,7 +137,7 @@ defmodule Porcelain do
 
   def spawn(cmd, options) when is_binary(cmd) and is_list(options) do
     catch_wrapper fn ->
-      driver().spawn_shell(cmd, compile_options(options))
+      driver().spawn_shell(cmd, compile_spawn_options(options))
     end
   end
 
@@ -142,7 +145,7 @@ defmodule Porcelain do
     when is_binary(cmd) and is_list(args) and is_list(options)
   do
     catch_wrapper fn ->
-      driver().spawn(cmd, args, compile_options(options))
+      driver().spawn(cmd, args, compile_spawn_options(options))
     end
   end
 
@@ -293,17 +296,17 @@ defmodule Porcelain do
     #{ port, input, output, error }
   #end
 
-  defp compile_options(options) do
+  defp compile_exec_options(options) do
     {good, bad} = Enum.reduce(options, {[], []}, fn {name, val}, {good, bad} ->
       compiled = case name do
-        :in  -> {:ok, compile_input_opt(val)}
+        :in  -> compile_input_opt(val)
         :out -> {:ok, compile_output_opt(val)}
         :err -> {:ok, compile_error_opt(val)}
         :async_in ->
           if val in [true, false] do
             {:ok, val}
           end
-        _    -> nil
+        _ -> nil
       end
       case compiled do
         nil        -> {good, bad ++ [{name, val}]}
@@ -314,8 +317,24 @@ defmodule Porcelain do
     {good, bad}
   end
 
+  defp compile_spawn_options(options) do
+    {good, bad} = compile_exec_options(options)
+    Enum.reduce(bad, {good, []}, fn opt, {good, bad} ->
+      compiled = case opt do
+        {:in, :receive} -> :ok
+        {:out, :stream} -> :ok
+        {:err, :stream} -> :ok
+        _ -> nil
+      end
+      case compiled do
+        :ok -> {good ++ [opt], bad}
+        nil -> {good, bad ++ [opt]}
+      end
+    end)
+  end
+
   defp compile_input_opt(opt) do
-    case opt do
+    result = case opt do
       nil                                              -> nil
       #:pid                                             -> :pid
       {:file, fid}=x when is_pid(fid)                  -> x
@@ -325,13 +344,16 @@ defmodule Porcelain do
         if Enumerable.impl_for(other) != nil do
           other
         else
-          raise RuntimeError, message: "Unsupported input argument"
+          :badval
         end
+    end
+    if result != :badval do
+      {:ok, result}
     end
   end
 
   defp compile_output_opt(opt) do
-    compile_out_opt(opt, :err)
+    compile_out_opt(opt, nil)
   end
 
   defp compile_error_opt(opt) do

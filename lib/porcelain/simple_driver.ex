@@ -41,9 +41,12 @@ defmodule Porcelain.Driver.Simple do
 
   defp do_exec(cmd, args, opts, shell_flag) do
     opts = compile_options(opts)
-    exe = find_executable(cmd, shell_flag)
-    port = Port.open(exe, port_options(shell_flag, args, opts))
-    communicate(port, opts[:async_in], opts[:in], opts[:out], opts[:err])
+    if exe=find_executable(cmd, shell_flag) do
+      port = Port.open(exe, port_options(shell_flag, args, opts))
+      communicate(port, opts[:async_in], opts[:in], opts[:out], opts[:err])
+    else
+      throw "Command not found: #{cmd}"
+    end
   end
 
   defp do_spawn(cmd, args, opts, shell_flag) do
@@ -62,11 +65,13 @@ defmodule Porcelain.Driver.Simple do
     do: throw "Invalid options: #{inspect extra_opts}"
 
 
-  def find_executable(cmd, :noshell),
-    do: {:spawn_executable, :os.find_executable(:erlang.binary_to_list(cmd))}
+  def find_executable(cmd, :noshell) do
+    if exe=:os.find_executable(:erlang.binary_to_list(cmd)) do
+      {:spawn_executable, exe}
+    end
+  end
 
-  def find_executable(cmd, :shell),
-    do: {:spawn, cmd}
+  def find_executable(cmd, :shell), do: {:spawn, cmd}
 
 
   defp port_options(:noshell, args, opts),
@@ -134,7 +139,12 @@ defmodule Porcelain.Driver.Simple do
   end
 
   defp stream_to_port(enum, port) do
-    Enum.each(enum, &Port.command(port, [&1]))
+    Enum.each(enum, fn
+      iodata when is_list(iodata) or is_binary(iodata) ->
+        Port.command(port, iodata)
+      byte ->
+        Port.command(port, [byte])
+    end)
   end
 
   defp collect_output(port, output, error) do

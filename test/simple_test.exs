@@ -122,4 +122,21 @@ defmodule PorcelainTest.SimpleTest do
     end)
     assert File.read!(outpath) == "file\nfrom\ninput\n"
   end
+
+  test "errors: bad option" do
+    assert Porcelain.exec("whatever", option: "value")
+           == {:error, "Invalid options: [option: \"value\"]"}
+    assert Porcelain.exec("whatever", in: :receive)
+           == {:error, "Invalid options: [in: :receive]"}
+  end
+
+  test "errors: non-existent program" do
+    result = Porcelain.exec("whatever", err: :out)
+    assert %Porcelain.Result{err: :out, out: <<_::binary>>, status: 127}
+           = result
+    assert result.out =~ ~r/exec: whatever: not found/
+
+    assert Porcelain.exec({"whatever", []})
+           == {:error, "Command not found: whatever"}
+  end
 end
