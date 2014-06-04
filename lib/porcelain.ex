@@ -61,6 +61,10 @@ defmodule Porcelain do
     - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
       `File.open`; the file will be read from the current position until EOF
 
+  * `:async_in` – can be `true` or `false`. When enabled, an additional process
+    will be spawned to feed input to the external process concurrently with
+    receiving output.
+
 
   * `:out` – specify the way output will be passed back to Elixir.
 
@@ -377,6 +381,10 @@ defmodule Porcelain do
         :in  -> {:ok, compile_input_opt(val)}
         :out -> {:ok, compile_output_opt(val)}
         :err -> {:ok, compile_error_opt(val)}
+        :async_in ->
+          if val in [true, false] do
+            {:ok, val}
+          end
         _    -> nil
       end
       case compiled do

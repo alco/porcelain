@@ -43,7 +43,7 @@ defmodule Porcelain.Driver.Simple do
     opts = compile_options(opts)
     exe = find_executable(cmd, shell_flag)
     port = Port.open(exe, port_options(shell_flag, args, opts))
-    communicate(port, opts[:in], opts[:out], opts[:err])
+    communicate(port, opts[:async_in], opts[:in], opts[:out], opts[:err])
   end
 
   defp do_spawn(cmd, args, opts, shell_flag) do
@@ -59,7 +59,7 @@ defmodule Porcelain.Driver.Simple do
     do: opts
 
   defp compile_options({_opts, extra_opts}),
-    do: throw "Undefined options: #{inspect extra_opts}"
+    do: throw "Invalid options: #{inspect extra_opts}"
 
 
   def find_executable(cmd, :noshell),
@@ -86,8 +86,13 @@ defmodule Porcelain.Driver.Simple do
     ret
   end
 
-  defp communicate(port, input, output, error) do
-    send_input(port, input)
+  defp communicate(port, async_input?, input, output, error) do
+    input_fun = fn -> send_input(port, input) end
+    if async_input? do
+      spawn(input_fun)
+    else
+      input_fun.()
+    end
     collect_output(port, output, error)
   end
 

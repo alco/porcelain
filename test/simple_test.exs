@@ -38,6 +38,12 @@ defmodule PorcelainTest.SimpleTest do
            == %Result{out: ">end< once\n>end< twice\n", err: nil, status: 0}
   end
 
+  test "async input" do
+    cmd = {"grep", [">end<", "-m", "2"]}
+    assert exec(cmd, in: "hi\n>end< once\nbye\n>end< twice\n", async_in: true)
+           == %Result{out: ">end< once\n>end< twice\n", err: nil, status: 0}
+  end
+
   test "input iodata" do
     cmd = {"grep", [">end<", "-m", "2"]}
     input = ["hi\n", [?>, [?e, ?n], "d< onc"],
