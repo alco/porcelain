@@ -8,15 +8,15 @@ defmodule Porcelain.Driver.Simple do
 
   This driver has two major limitations compared to `Porcelain.Driver.Goon`:
 
-  * the `exec` function does not work with programs that read all input until
-    EOF before producing any output. Such programs will hang since Erlang ports
-    don't provide any mechanism to indicate the end of input.
+    * the `exec` function does not work with programs that read all input until
+      EOF before producing any output. Such programs will hang since Erlang
+      ports don't provide any mechanism to indicate the end of input.
 
-    If a program is continuously consuming input and producing output, it could
-    work with the `spawn` function, but you'll also have to explicitly close
-    the connection with the external program when you're done with it.
+      If a program is continuously consuming input and producing output, it
+      could work with the `spawn` function, but you'll also have to explicitly
+      close the connection with the external program when you're done with it.
 
-  * sending OS signals to external processes is not supported
+    * sending OS signals to external processes is not supported
 
   """
 

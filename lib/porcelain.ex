@@ -47,52 +47,52 @@ defmodule Porcelain do
 
   Available options:
 
-  * `:in` – specify the way input will be passed to the external process.
+    * `:in` – specify the way input will be passed to the external process.
 
-    Possible values:
+      Possible values:
 
-    - `<iodata>` – the data is fed into stdin as the sole input for the program
+      - `<iodata>` – the data is fed into stdin as the sole input for the program
 
-    - `<stream>` – interprets `<stream>` as a stream of iodata to be fed into
-      the program
+      - `<stream>` – interprets `<stream>` as a stream of iodata to be fed into
+        the program
 
-    - `{:path, <string>}` – path to a file to be fed into stdin
+      - `{:path, <string>}` – path to a file to be fed into stdin
 
-    - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
-      `File.open`; the file will be read from the current position until EOF
+      - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
+        `File.open`; the file will be read from the current position until EOF
 
-  * `:async_in` – can be `true` or `false`. When enabled, an additional process
-    will be spawned to feed input to the external process concurrently with
-    receiving output.
+    * `:async_in` – can be `true` or `false`. When enabled, an additional
+      process will be spawned to feed input to the external process
+      concurrently with receiving output.
 
-  * `:out` – specify the way output will be passed back to Elixir.
+    * `:out` – specify the way output will be passed back to Elixir.
 
-    Possible values:
+      Possible values:
 
-    - `nil` – discard the output
+      - `nil` – discard the output
 
-    - `:string` (default) – the whole output will be accumulated in memory and
-      returned as one string to the caller
+      - `:string` (default) – the whole output will be accumulated in memory and
+        returned as one string to the caller
 
-    - `:iodata` – the whole output will be accumulated in memory and returned
-      as iodata to the caller
+      - `:iodata` – the whole output will be accumulated in memory and returned
+        as iodata to the caller
 
-    - `{:path, <string>}` – the file at path will be created (or truncated) and
-      the output will be written to it
+      - `{:path, <string>}` – the file at path will be created (or truncated) and
+        the output will be written to it
 
-    - `{:append, <string>}` – the output will be appended to the the file at
-      path (it will be created first if needed)
+      - `{:append, <string>}` – the output will be appended to the the file at
+        path (it will be created first if needed)
 
-    - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
-      `File.open`; the file will be written to starting at the current position
+      - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
+        `File.open`; the file will be written to starting at the current position
 
-  * `:err` – specify the way stderr will be passed back to Elixir.
+    * `:err` – specify the way stderr will be passed back to Elixir.
 
-    Possible values are the same as for `:out`. In addition, it accepts the
-    atom `:out` which denotes redirecting stderr to stdout.
+      Possible values are the same as for `:out`. In addition, it accepts the
+      atom `:out` which denotes redirecting stderr to stdout.
 
-    **Caveat**: when using `Porcelain.Driver.Simple`, the only supported values
-    are `nil` (stderr will be printed to the terminal) and `:out`.
+      **Caveat**: when using `Porcelain.Driver.Simple`, the only supported values
+      are `nil` (stderr will be printed to the terminal) and `:out`.
 
   """
   @spec exec(cmdspec) :: %Result{}
@@ -121,18 +121,18 @@ defmodule Porcelain do
 
   Supports all options defined for `exec/2` plus some additional ones:
 
-  * `in: :receive` – input is expected to be sent to the process in chunks
-    using the `send/2` function.
+    * `in: :receive` – input is expected to be sent to the process in chunks
+      using the `send/2` function.
 
-  * `out: :stream` – the `:out` field of the returned `Process` struct will
-    contain a stream of iodata.
+    * `out: :stream` – the `:out` field of the returned `Process` struct will
+      contain a stream of iodata.
 
-    Note that the underlying port implementation is message based. This means
-    that the external program will be able to send all of its output to an
-    Elixir process and terminate. The data will be kept in the Elixir process'
-    message box until the stream is consumed.
+      Note that the underlying port implementation is message based. This means
+      that the external program will be able to send all of its output to an
+      Elixir process and terminate. The data will be kept in the Elixir process'
+      message box until the stream is consumed.
 
-  * `err: :stream` – same as `:out`, but will return stderr as a stream.
+    * `err: :stream` – same as `:out`, but will return stderr as a stream.
 
   """
   @spec spawn(cmdspec) :: %Process{}
