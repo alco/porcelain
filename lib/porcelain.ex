@@ -16,7 +16,7 @@ defmodule Porcelain do
     defstruct [:port, :out, :err]
   end
 
-  @doc """
+  @typedoc """
   The `cmdspec` type represents a command to run. It can denote either a shell
   invocation or a program name.
 
