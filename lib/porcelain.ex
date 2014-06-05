@@ -1,5 +1,4 @@
 defmodule Porcelain do
-
   defmodule Result do
     @moduledoc """
     A struct containing the result of running an external program after it has
@@ -8,13 +7,6 @@ defmodule Porcelain do
     defstruct [:status, :out, :err]
   end
 
-  defmodule Process do
-    @moduledoc """
-    A struct representing an OS processes which provides the ability to
-    exchange data between Porcelain and the process.
-    """
-    defstruct [:port, :out, :err]
-  end
 
   @typedoc """
   The `cmdspec` type represents a command to run. It can denote either a shell
@@ -32,6 +24,7 @@ defmodule Porcelain do
   arguments to it.
   """
   @type cmdspec :: binary | {binary, [binary]}
+
 
   @doc """
   Execute the command synchronously.
@@ -129,8 +122,8 @@ defmodule Porcelain do
 
       Note that the underlying port implementation is message based. This means
       that the external program will be able to send all of its output to an
-      Elixir process and terminate. The data will be kept in the Elixir process'
-      message box until the stream is consumed.
+      Elixir process and terminate. The data will be kept in the Elixir
+      process's message box until the stream is consumed.
 
     * `err: :stream` – same as `:out`, but will return stderr as a stream.
 
@@ -154,41 +147,7 @@ defmodule Porcelain do
     end
   end
 
-  @doc """
-  Send iodata to the process' stdin.
-
-  End of input is indicated by sending an empty message.
-
-  **Caveat**: when using `Porcelain.Driver.Simple`, it is not possible to
-  indicate the end of input. You should close the port explicitly using
-  `close/1`.
-  """
-  @spec send(%Process{}, iodata) :: iodata
-
-  def send(%Process{port: port}, data) do
-    Port.command(port, data)
-  end
-
-  @doc """
-  Check if the underlying port is closed.
-  """
-  @spec closed?(%Process{}) :: true | false
-
-  def closed?(%Process{port: port}) do
-    Port.info(port) == :undefined
-  end
-
-  @doc """
-  Closes the port to the external process created with `spawn/2`.
-
-  Depending on the driver in use, this may or may not terminate the external
-  process.
-  """
-  @spec close(%Process{}) :: true
-
-  def close(%Process{port: port}) do
-    Port.close(port)
-  end
+  ###
 
   defp catch_wrapper(fun) do
     try do
@@ -197,6 +156,107 @@ defmodule Porcelain do
       :throw, thing -> {:error, thing}
     end
   end
+
+
+  defp compile_exec_options(options) do
+    {good, bad} = Enum.reduce(options, {[], []}, fn {name, val}, {good, bad} ->
+      compiled = case name do
+        :in  -> compile_input_opt(val)
+        :out -> compile_output_opt(val)
+        :err -> compile_error_opt(val)
+        :env -> compile_env_opt(val)
+        :async_in ->
+          if val in [true, false] do
+            {:ok, val}
+          end
+        _ -> nil
+      end
+      case compiled do
+        nil        -> {good, bad ++ [{name, val}]}
+        {:ok, opt} -> {good ++ [{name, opt}], bad}
+      end
+    end)
+    if not Keyword.has_key?(options, :out) do
+      good = Keyword.put(good, :out, {:string, ""})
+    end
+    {good, bad}
+  end
+
+  defp compile_spawn_options(options) do
+    {good, bad} = compile_exec_options(options)
+    Enum.reduce(bad, {good, []}, fn opt, {good, bad} ->
+      compiled = case opt do
+        {:in, :receive} -> :ok
+        {:out, :stream} -> :ok
+        {:err, :stream} -> :ok
+        _ -> nil
+      end
+      case compiled do
+        :ok -> {good ++ [opt], bad}
+        nil -> {good, bad ++ [opt]}
+      end
+    end)
+  end
+
+  defp compile_input_opt(opt) do
+    result = case opt do
+      nil                                              -> nil
+      #:pid                                             -> :pid
+      {:file, fid}=x when is_pid(fid)                  -> x
+      {:path, path}=x when is_binary(path)             -> x
+      iodata when is_binary(iodata) or is_list(iodata) -> iodata
+      other ->
+        if Enumerable.impl_for(other) != nil do
+          other
+        else
+          :badval
+        end
+    end
+    if result != :badval, do: {:ok, result}
+  end
+
+  defp compile_output_opt(opt) do
+    compile_out_opt(opt, nil)
+  end
+
+  defp compile_error_opt(opt) do
+    compile_out_opt(opt, :out)
+  end
+
+  defp compile_out_opt(opt, typ) do
+    result = case opt do
+      ^typ                                   -> typ
+      nil                                    -> nil
+      :string                                -> {:string, ""}
+      :iodata                                -> {:iodata, ""}
+      {:file, fid}=x when is_pid(fid)        -> x
+      {:path, path}=x when is_binary(path)   -> x
+      {:append, path}=x when is_binary(path) -> x
+      #{pid, ref} when is_pid(pid) -> { pid, ref }
+      _ -> :badval
+    end
+    if result != :badval, do: {:ok, result}
+  end
+
+  defp compile_env_opt(val) do
+    {vars, ok?} = Enum.map_reduce(val, true, fn
+      x={name, val}, ok?
+        when (is_binary(name) or is_atom(name))
+         and (is_binary(val) or val == false) -> {x, ok?}
+      other, _ -> {other, false}
+    end)
+    if ok?, do: {:ok, vars}
+  end
+
+
+  # dynamic selection of the execution driver which does all the hard work
+  defp driver() do
+    case :application.get_env(:porcelain, :driver) do
+      :undefined -> Porcelain.Driver.Simple
+      other -> other
+    end
+  end
+
 
     #{port, input, output, error} = init_port_connection(cmd, args, options)
     #proc = %Process{in: input, out: output, err: error}
@@ -336,94 +396,4 @@ defmodule Porcelain do
 
     #{ port, input, output, error }
   #end
-
-  defp compile_exec_options(options) do
-    {good, bad} = Enum.reduce(options, {[], []}, fn {name, val}, {good, bad} ->
-      compiled = case name do
-        :in  -> compile_input_opt(val)
-        :out -> compile_output_opt(val)
-        :err -> compile_error_opt(val)
-        :async_in ->
-          if val in [true, false] do
-            {:ok, val}
-          end
-        _ -> nil
-      end
-      case compiled do
-        nil        -> {good, bad ++ [{name, val}]}
-        {:ok, opt} -> {good ++ [{name, opt}], bad}
-      end
-    end)
-    if not Keyword.has_key?(options, :out) do
-      good = Keyword.put(good, :out, {:string, ""})
-    end
-    {good, bad}
-  end
-
-  defp compile_spawn_options(options) do
-    {good, bad} = compile_exec_options(options)
-    Enum.reduce(bad, {good, []}, fn opt, {good, bad} ->
-      compiled = case opt do
-        {:in, :receive} -> :ok
-        {:out, :stream} -> :ok
-        {:err, :stream} -> :ok
-        _ -> nil
-      end
-      case compiled do
-        :ok -> {good ++ [opt], bad}
-        nil -> {good, bad ++ [opt]}
-      end
-    end)
-  end
-
-  defp compile_input_opt(opt) do
-    result = case opt do
-      nil                                              -> nil
-      #:pid                                             -> :pid
-      {:file, fid}=x when is_pid(fid)                  -> x
-      {:path, path}=x when is_binary(path)             -> x
-      iodata when is_binary(iodata) or is_list(iodata) -> iodata
-      other ->
-        if Enumerable.impl_for(other) != nil do
-          other
-        else
-          :badval
-        end
-    end
-    if result != :badval do
-      {:ok, result}
-    end
-  end
-
-  defp compile_output_opt(opt) do
-    compile_out_opt(opt, nil)
-  end
-
-  defp compile_error_opt(opt) do
-    compile_out_opt(opt, :out)
-  end
-
-  defp compile_out_opt(opt, typ) do
-    result = case opt do
-      ^typ                                   -> typ
-      nil                                    -> nil
-      :string                                -> {:string, ""}
-      :iodata                                -> {:iodata, ""}
-      {:file, fid}=x when is_pid(fid)        -> x
-      {:path, path}=x when is_binary(path)   -> x
-      {:append, path}=x when is_binary(path) -> x
-      #{pid, ref} when is_pid(pid) -> { pid, ref }
-      _ -> :badval
-    end
-    if result != :badval do
-      {:ok, result}
-    end
-  end
-
-  defp driver() do
-    case :application.get_env(:porcelain, :driver) do
-      :undefined -> Porcelain.Driver.Simple
-      other -> other
-    end
-  end
 end

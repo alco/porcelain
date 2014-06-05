@@ -1,7 +1,9 @@
 defmodule PorcelainTest.SimpleTest do
   use ExUnit.Case
 
+  import TestUtil
   import Porcelain, only: [exec: 1, exec: 2]
+
   alias Porcelain.Result
 
   test "status" do
@@ -62,14 +64,14 @@ defmodule PorcelainTest.SimpleTest do
 
   test "input path" do
     cmd = "head -n 3 | sort"
-    path = Path.expand("fixtures/input.txt", __DIR__)
+    path = fixture_path("input.txt")
     assert exec(cmd, in: {:path, path})
            == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}
   end
 
   test "input file" do
     cmd = "head -n 3 | sort"
-    path = Path.expand("fixtures/input.txt", __DIR__)
+    path = fixture_path("input.txt")
     File.open(path, fn file ->
       assert exec(cmd, in: {:file, file})
              == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}
@@ -113,7 +115,7 @@ defmodule PorcelainTest.SimpleTest do
 
   test "output file" do
     cmd = "head -n 3 | sort"
-    inpath = Path.expand("fixtures/input.txt", __DIR__)
+    inpath = fixture_path("input.txt")
     outpath = Path.join(System.tmp_dir, "tmpoutput")
     File.rm_rf!(outpath)
     File.open(outpath, [:write], fn file ->
@@ -123,71 +125,20 @@ defmodule PorcelainTest.SimpleTest do
     assert File.read!(outpath) == "file\nfrom\ninput\n"
   end
 
-  test "spawn" do
-  end
-
-  test "spawn streams" do
-    cmd = {"grep", [">end<", "-m", "2"]}
-
-    pid = self()
-
-    stream_fn = fn acc ->
-      send(pid, {:get_data, self()})
-      receive do
-        {^pid, :done}       -> nil
-        {^pid, data} -> {data, acc}
-      end
-    end
-    instream = Stream.unfold(nil, stream_fn)
-
-    proc = Porcelain.spawn(cmd, in: instream, out: :stream)
-    assert %Porcelain.Process{port: _, out: _, err: nil} = proc
-    assert is_port(proc.port)
-    assert Enumerable.impl_for(proc.out) != nil
-
-    spawn(fn ->
-      send(pid, IO.iodata_to_binary(Enum.into(proc.out, [])))
-      send(pid, :ok)
-    end)
-
-    receive do
-      {:get_data, pid} -> send(pid, {self(), ["hello", [?\s, "wor"], "ld"]})
-    end
-    receive do
-      {:get_data, pid} -> send(pid, {self(), "|>end<|\n"})
-    end
-    receive do
-      {:get_data, pid} -> send(pid, {self(), "ignore me\n"})
-    end
-    receive do
-      {:get_data, pid} -> send(pid, {self(), [?>, ?e, [?n, [?d]], "<"]})
-    end
-
-    refute_receive :ok
-    refute Porcelain.closed?(proc)
-
-    receive do
-      {:get_data, pid} -> send(pid, {self(), "\n"})
-    end
-    assert_receive :ok
-    assert_receive "hello world|>end<|\n>end<\n"
-    assert Porcelain.closed?(proc)
-  end
-
   test "errors: bad option" do
-    assert Porcelain.exec("whatever", option: "value")
+    assert exec("whatever", option: "value")
            == {:error, "Invalid options: [option: \"value\"]"}
-    assert Porcelain.exec("whatever", in: :receive)
+    assert exec("whatever", in: :receive)
            == {:error, "Invalid options: [in: :receive]"}
   end
 
   test "errors: non-existent program" do
-    result = Porcelain.exec("whatever", err: :out)
-    assert %Porcelain.Result{err: :out, out: <<_::binary>>, status: 127}
+    result = exec("whatever", err: :out)
+    assert %Result{err: :out, out: <<_::binary>>, status: 127}
            = result
     assert result.out =~ ~r/exec: whatever: not found/
 
-    assert Porcelain.exec({"whatever", []})
+    assert exec({"whatever", []})
            == {:error, "Command not found: whatever"}
   end
 end
