@@ -67,7 +67,8 @@ defmodule Porcelain.Driver.Simple do
 
     out_ret = case out_opt do
       {:stream, server} -> Stream.unfold(server, &read_stream/1)
-      _                 -> out_opt
+      {atom, ""} when atom in [:string, :iodata] -> atom
+      _ -> out_opt
     end
     %Porcelain.Process{port: port, out: out_ret, err: opts[:err]}
   end
