@@ -143,10 +143,15 @@ defmodule Porcelain do
     * `:result` – specify how the result of the external program should be
     returned after it has terminated.
 
+      This option has a smart default value. If either `:out` or `:err` option
+      is set to `:string` or `:iodata`, `:result` will be set to `:keep`.
+      Otherwise, it will be set to `:discard`.
+
       Possible values:
 
-      * `:keep` (default) – the result will be kept in memory until requested
-        by calling `Porcelain.Process.await/2`.
+      * `:keep` – the result will be kept in memory until requested by calling
+        `Porcelain.Process.await/2` or discarded by calling
+        `Porcelain.Process.close/1`.
 
       * `:discard` – discards the result and automatically closes the port
         after program termination. Useful in combination with `out: :stream`
@@ -155,7 +160,7 @@ defmodule Porcelain do
       * `{:send, <pid>}` – the result will be sent to `<pid>`. The
         `Porcelain.Process` struct returned from `spawn/3` or `spawn_shell/2`
         will have it's result field set to `{:send, <ref>}`. The actual message
-        with `Porcelain.Result` struct will have this shape:
+        with a `Porcelain.Result` struct will have this shape:
 
               {<ref>, %Porcelain.Result{}}
 
@@ -241,7 +246,16 @@ defmodule Porcelain do
       end
     end)
     if not Keyword.has_key?(good, :result) do
-      good = Keyword.put(good, :result, :keep)
+      out = good[:out]
+      err = good[:err]
+      default =
+        if match?({:string, _}, out) or match?({:iodata, _}, out)
+               or match?({:string, _}, err) or match?({:iodata, _}, err) do
+          :keep
+        else
+          :discard
+        end
+      good = Keyword.put(good, :result, default)
     end
     {good, bad}
   end

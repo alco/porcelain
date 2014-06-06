@@ -7,8 +7,8 @@ defmodule PorcelainTest.SimpleAsyncTest do
   test "spawn keep result" do
     cmd = "head -n 3 | cut -b 1-4"
     proc = Porcelain.spawn_shell(cmd,
-                in: "multiple\nlines\nof input\n", result: :keep)
-    assert %Process{port: _, out: :string, err: nil, result: :keep} = proc
+                in: "multiple\nlines\nof input\n")
+    assert %Process{port: _, out: :string, err: nil} = proc
 
     :timer.sleep(100)
 
@@ -61,7 +61,7 @@ defmodule PorcelainTest.SimpleAsyncTest do
     instream = Stream.unfold(nil, stream_fn)
 
     proc = Porcelain.spawn("grep", [">end<", "-m", "2"],
-                        in: instream, out: :stream, result: :discard)
+                        in: instream, out: :stream)
     assert %Process{port: _, out: _, err: nil} = proc
     assert is_port(proc.port)
     assert Enumerable.impl_for(proc.out) != nil
