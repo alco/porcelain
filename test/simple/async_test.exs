@@ -1,4 +1,4 @@
-defmodule PorcelainTest.AsyncTest do
+defmodule PorcelainTest.SimpleAsyncTest do
   use ExUnit.Case
 
   alias Porcelain.Process

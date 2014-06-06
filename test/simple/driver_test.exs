@@ -42,15 +42,19 @@ defmodule PorcelainTest.SimpleTest do
            == %Result{out: "bye\n", err: nil, status: 0}
   end
 
+  test "shell" do
+    cmd = "head -n 4 | tr a-i A-I | sort"
+    input = "Alphabetical\nlist\nof\nlines\n"
+    output = "AlpHABEtICAl\nlInEs\nlIst\noF\n"
+    assert exec(cmd, in: input) == %Result{out: output, err: nil, status: 0}
+
+    cmd = "head -n 4 >/dev/null"
+    assert exec(cmd, in: input) == %Result{out: "", err: nil, status: 0}
+  end
+
   test "input string" do
     cmd = {"grep", [">end<", "-m", "2"]}
     assert exec(cmd, in: "hi\n>end< once\nbye\n>end< twice\n")
-           == %Result{out: ">end< once\n>end< twice\n", err: nil, status: 0}
-  end
-
-  test "async input" do
-    cmd = {"grep", [">end<", "-m", "2"]}
-    assert exec(cmd, in: "hi\n>end< once\nbye\n>end< twice\n", async_in: true)
            == %Result{out: ">end< once\n>end< twice\n", err: nil, status: 0}
   end
 
@@ -68,6 +72,11 @@ defmodule PorcelainTest.SimpleTest do
                           [[[?n, "d<\n"], "again\n"], ">e", "nd< final", ?\n])
     assert exec(cmd, in: input)
            == %Result{out: "the>end<\n>end< final\n", err: nil, status: 0}
+
+    cmd = {"head", ["-n", "3"]}
+    stream = File.stream!(fixture_path("input.txt"))
+    assert exec(cmd, in: stream)
+           == %Result{out: "input\nfrom\nfile\n", err: nil, status: 0}
   end
 
   test "input path" do
@@ -78,22 +87,18 @@ defmodule PorcelainTest.SimpleTest do
   end
 
   test "input file" do
-    cmd = "head -n 3 | sort"
+    cmd = "head -n 3 | sort -r"
     path = fixture_path("input.txt")
     File.open(path, fn file ->
       assert exec(cmd, in: {:file, file})
-             == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}
+             == %Result{out: "input\nfrom\nfile\n", err: nil, status: 0}
     end)
   end
 
-  test "shell" do
-    cmd = "head -n 4 | tr a-c A-C | sort"
-    input = "Alphabetical\nlist\nof\nlines\n"
-    output = "AlphABetiCAl\nlines\nlist\nof\n"
-    assert exec(cmd, in: input) == %Result{out: output, err: nil, status: 0}
-
-    cmd = "head -n 4 >/dev/null"
-    assert exec(cmd, in: input) == %Result{out: "", err: nil, status: 0}
+  test "async input" do
+    cmd = {"grep", [">end<", "-m", "2"]}
+    assert exec(cmd, in: "hi\n>end< once\nbye\n>end< twice\n", async_in: true)
+           == %Result{out: ">end< once\n>end< twice\n", err: nil, status: 0}
   end
 
   test "output iodata" do
@@ -127,26 +132,12 @@ defmodule PorcelainTest.SimpleTest do
     outpath = Path.join(System.tmp_dir, "tmpoutput")
     File.rm_rf!(outpath)
     File.open(outpath, [:write], fn file ->
+      :ok = IO.write(file, "hello.")
+      pos = 4
+      {:ok, ^pos} = :file.position(file, pos)
       assert exec(cmd, in: {:path, inpath}, out: {:file, file})
              == %Result{out: {:file, file}, err: nil, status: 0}
     end)
-    assert File.read!(outpath) == "file\nfrom\ninput\n"
-  end
-
-  test "errors: bad option" do
-    assert exec("whatever", option: "value")
-           == {:error, "Invalid options: [option: \"value\"]"}
-    assert exec("whatever", in: :receive)
-           == {:error, "Invalid options: [in: :receive]"}
-  end
-
-  test "errors: non-existent program" do
-    result = exec("whatever", err: :out)
-    assert %Result{err: :out, out: <<_::binary>>, status: 127}
-           = result
-    assert result.out =~ ~r/exec: whatever: not found/
-
-    assert exec({"whatever", []})
-           == {:error, "Command not found: whatever"}
+    assert File.read!(outpath) == "hellfile\nfrom\ninput\n"
   end
 end

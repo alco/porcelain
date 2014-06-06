@@ -22,36 +22,36 @@ defmodule Porcelain.Driver.Simple do
 
   alias Porcelain.Driver.Simple.StreamServer
 
-  def exec(cmd, args, opts) do
-    do_exec(cmd, args, opts, :noshell)
+  def exec(prog, args, opts) do
+    do_exec(prog, args, opts, :noshell)
   end
 
-  def exec_shell(cmd, opts) do
-    do_exec(cmd, nil, opts, :shell)
+  def exec_shell(prog, opts) do
+    do_exec(prog, nil, opts, :shell)
   end
 
 
-  def spawn(cmd, args, opts) do
-    do_spawn(cmd, args, opts, :noshell)
+  def spawn(prog, args, opts) do
+    do_spawn(prog, args, opts, :noshell)
   end
 
-  def spawn_shell(cmd, opts) do
-    do_spawn(cmd, nil, opts, :shell)
+  def spawn_shell(prog, opts) do
+    do_spawn(prog, nil, opts, :shell)
   end
 
   ###
 
-  defp do_exec(cmd, args, opts, shell_flag) do
+  defp do_exec(prog, args, opts, shell_flag) do
     opts = compile_options(opts)
-    exe = find_executable(cmd, shell_flag)
+    exe = find_executable(prog, shell_flag)
     port = Port.open(exe, port_options(shell_flag, args, opts))
     communicate(port, opts[:in], opts[:out], opts[:err],
         async_input: opts[:async_in])
   end
 
-  defp do_spawn(cmd, args, opts, shell_flag) do
+  defp do_spawn(prog, args, opts, shell_flag) do
     opts = compile_options(opts)
-    exe = find_executable(cmd, shell_flag)
+    exe = find_executable(prog, shell_flag)
     port = Port.open(exe, port_options(shell_flag, args, opts))
 
     out_opt = opts[:out]
@@ -100,15 +100,15 @@ defmodule Porcelain.Driver.Simple do
     do: throw "Invalid options: #{inspect extra_opts}"
 
 
-  def find_executable(cmd, :noshell) do
-    if exe=:os.find_executable(:erlang.binary_to_list(cmd)) do
+  def find_executable(prog, :noshell) do
+    if exe=:os.find_executable(:erlang.binary_to_list(prog)) do
       {:spawn_executable, exe}
     else
-      throw "Command not found: #{cmd}"
+      throw "Command not found: #{prog}"
     end
   end
 
-  def find_executable(cmd, :shell), do: {:spawn, cmd}
+  def find_executable(prog, :shell), do: {:spawn, prog}
 
 
   defp port_options(:noshell, args, opts),

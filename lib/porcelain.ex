@@ -1,7 +1,7 @@
 defmodule Porcelain do
   defmodule Result do
-    @moduledoc """
-    A struct containing the result of running an external program after it has
+    @doc """
+    A struct containing the result of running a program after it has
     terminated.
     """
     defstruct [:status, :out, :err]
@@ -9,7 +9,7 @@ defmodule Porcelain do
 
 
   @typedoc """
-  The `cmdspec` type represents a command to run. It can denote either a shell
+  The `progspec` type represents a program to run. It can denote either a shell
   invocation or a program name.
 
   When it is a binary, it will be interpreted as a shell command. Porcelain
@@ -19,28 +19,30 @@ defmodule Porcelain do
   programs with pipes, etc. The downside is that those advanced features may
   be unavailable on some platforms.
 
-  When `cmdspec` is a tuple `{cmd, args}`, Porcelain will look for the command
-  in PATH and launch it directly, passing the `args` list as command-line
-  arguments to it.
+  When `progspec` is a tuple `{progname, args}`, Porcelain will look for the
+  program in PATH and launch it directly, passing the `args` list as
+  command-line arguments to it.
   """
-  @type cmdspec :: binary | {binary, [binary]}
+  # TODO: check if ports workk with iodata arguments and names
+  @type progspec :: binary | {binary, [binary]}
 
 
   @doc """
-  Execute the command synchronously.
+  Execute a program synchronously.
 
-  Feeds all input into the program, then waits for it to terminate. Returns a
-  `Result` struct containing program's output and exit status code.
+  Feeds all input into the program (synchronously or concurrently with reading
+  output; see `:async_in` option below) and waits for it to terminate. Returns
+  a `Porcelain.Result` struct containing program's output and exit status code.
 
   When no options are passed, the following defaults will be used:
 
-      [in: "", out: :string, err: nil]
+      [in: "", async_in: true, out: :string, err: nil]
 
   This will run the program with no input and will capture its standard output.
 
   Available options:
 
-    * `:in` – specify the way input will be passed to the external process.
+    * `:in` – specify the way input will be passed to the program.
 
       Possible values:
 
@@ -55,8 +57,8 @@ defmodule Porcelain do
       - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
         `File.open`; the file will be read from the current position until EOF
 
-    * `:async_in` – can be `true` or `false`. When enabled, an additional
-      process will be spawned to feed input to the external process
+    * `:async_in` – can be `true` or `false` (default). When enabled, an
+      additional process will be spawned to feed input to the program
       concurrently with receiving output.
 
     * `:out` – specify the way output will be passed back to Elixir.
@@ -89,29 +91,29 @@ defmodule Porcelain do
       **Caveat**: when using `Porcelain.Driver.Simple`, the only supported
       values are `nil` (stderr will be printed to the terminal) and `:out`.
 
-    * `:env` – set environment variables for the external process. The value
+    * `:env` – set additional environment variables for the program. The value
       should be an enumerable with elements of the shape `{<key>, <val>}` where
       `<key>` is an atom or a binary and `<val>` is a binary or `false`
       (meaning removing the corresponding variable from the environment).
       Basically, it accepts any kind of dict, including keyword lists.
 
   """
-  @spec exec(cmdspec) :: %Result{}
-  @spec exec(cmdspec, Keyword.t) :: %Result{}
+  @spec exec(progspec) :: Porcelain.Result.t
+  @spec exec(progspec, Keyword.t) :: Porcelain.Result.t
 
-  def exec(cmd, options \\ [])
+  def exec(prog, options \\ [])
 
-  def exec(cmd, options) when is_binary(cmd) and is_list(options) do
+  def exec(prog, options) when is_binary(prog) and is_list(options) do
     catch_wrapper fn ->
-      driver().exec_shell(cmd, compile_exec_options(options))
+      driver().exec_shell(prog, compile_exec_options(options))
     end
   end
 
-  def exec({cmd, args}, options)
-    when is_binary(cmd) and is_list(args) and is_list(options)
+  def exec({prog, args}, options)
+    when is_binary(prog) and is_list(args) and is_list(options)
   do
     catch_wrapper fn ->
-      driver().exec(cmd, args, compile_exec_options(options))
+      driver().exec(prog, args, compile_exec_options(options))
     end
   end
 
@@ -161,22 +163,22 @@ defmodule Porcelain do
               {<ref>, %Porcelain.Result{}}
 
   """
-  @spec spawn(cmdspec) :: %Process{}
-  @spec spawn(cmdspec, Keyword.t) :: %Process{}
+  @spec spawn(progspec) :: Porcelain.Process.t
+  @spec spawn(progspec, Keyword.t) :: Porcelain.Process.t
 
-  def spawn(cmd, options \\ [])
+  def spawn(prog, options \\ [])
 
-  def spawn(cmd, options) when is_binary(cmd) and is_list(options) do
+  def spawn(prog, options) when is_binary(prog) and is_list(options) do
     catch_wrapper fn ->
-      driver().spawn_shell(cmd, compile_spawn_options(options))
+      driver().spawn_shell(prog, compile_spawn_options(options))
     end
   end
 
-  def spawn({cmd, args}, options)
-    when is_binary(cmd) and is_list(args) and is_list(options)
+  def spawn({prog, args}, options)
+    when is_binary(prog) and is_list(args) and is_list(options)
   do
     catch_wrapper fn ->
-      driver().spawn(cmd, args, compile_spawn_options(options))
+      driver().spawn(prog, args, compile_spawn_options(options))
     end
   end
 
