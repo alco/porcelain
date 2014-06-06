@@ -44,7 +44,8 @@ defmodule Porcelain do
 
       Possible values:
 
-      - `<iodata>` – the data is fed into stdin as the sole input for the program
+      - `<iodata>` – the data is fed into stdin as the sole input for the
+        program
 
       - `<stream>` – interprets `<stream>` as a stream of iodata to be fed into
         the program
@@ -64,28 +65,35 @@ defmodule Porcelain do
 
       - `nil` – discard the output
 
-      - `:string` (default) – the whole output will be accumulated in memory and
-        returned as one string to the caller
+      - `:string` (default) – the whole output will be accumulated in memory
+        and returned as one string to the caller
 
       - `:iodata` – the whole output will be accumulated in memory and returned
         as iodata to the caller
 
-      - `{:path, <string>}` – the file at path will be created (or truncated) and
-        the output will be written to it
+      - `{:path, <string>}` – the file at path will be created (or truncated)
+        and the output will be written to it
 
       - `{:append, <string>}` – the output will be appended to the the file at
         path (it will be created first if needed)
 
       - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
-        `File.open`; the file will be written to starting at the current position
+        `File.open`; the file will be written to starting at the current
+        position
 
     * `:err` – specify the way stderr will be passed back to Elixir.
 
       Possible values are the same as for `:out`. In addition, it accepts the
       atom `:out` which denotes redirecting stderr to stdout.
 
-      **Caveat**: when using `Porcelain.Driver.Simple`, the only supported values
-      are `nil` (stderr will be printed to the terminal) and `:out`.
+      **Caveat**: when using `Porcelain.Driver.Simple`, the only supported
+      values are `nil` (stderr will be printed to the terminal) and `:out`.
+
+    * `:env` – set environment variables for the external process. The value
+      should be an enumerable with elements of the shape `{<key>, <val>}` where
+      `<key>` is an atom or a binary and `<val>` is a binary or `false`
+      (meaning removing the corresponding variable from the environment).
+      Basically, it accepts any kind of dict, including keyword lists.
 
   """
   @spec exec(cmdspec) :: %Result{}
