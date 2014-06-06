@@ -11,15 +11,42 @@ Simply put, Porcelain removes the pain of dealing with ports and substitutes it
 with happiness and peace of mind.
 
 
+## Overview
+
+Having some 20 odd options, the Erlang port API can be unwieldy and cumbersome
+to use. Porcelain replaces it with a simpler approach and provides defaults for
+the common cases.
+
+User-level features include:
+
+  * sane API
+
+  * ability to launch external programs in a synchronous or asynchronous manner
+
+  * multiple ways of passing input to the program and getting back its output
+    (including working directly with files and Elixir streams)
+
+  * (_to be implemented_) ability to send OS signals to external processes
+
+  * (_to be implemented_) being able to work with programs that try to read the
+    whole input until EOF before producing output
+
+To find out more about the background on the library's design and possible
+future extensions, please refer to the [wiki][].
+
+  [wiki]: https://github.com/alco/porcelain/wiki
+
+
 ## Usage
 
 Examples below show some of the common use cases. Refer to the API docs to
-learn the complete set of provided functions and options.
+familiarize yourself the complete set of provided functions and options.
 
 
 ### Launching one-off programs
 
-If you need to launch an external program, feed it some input and capture its output and maybe also exit status, use `exec()` or `shell()`:
+If you need to launch an external program, feed it some input and capture its
+output and maybe also exit status, use `exec()` or `shell()`:
 
 ```elixir
 alias Porcelain.Result
@@ -65,12 +92,15 @@ process.
 In the next example we will use streams for both input and output.
 
 ```elixir
+### TODO: fix this example
+
 alias Porcelain.Process
 
-opts = [in: SocketStream.new('example.com', 80), out: :stream]
+instream = SocketStream.new('example.com', 80)
+opts = [in: instream, out: :stream]
 proc = %Process{out: outstream} = Porcelain.spawn("grep", ["div", "-m", "4"], opts)
 
-IO.write(outstream)
+Enum.into(outstream, IO.stream(:stdio, :line))
 #     div {
 #         div {
 # <div>
@@ -82,40 +112,13 @@ Process.closed?(proc)   #=> true
 The `SocketStream` module used above wraps a tcp socket in a stream. Its
 implementation can be found in the `test/test_helper.exs` file.
 
-By using streams we can chain multiple external processes together:
 
-```elixir
-alias Porcelain.Process
+## Going deeper
 
-opts = [in: SocketStream.new('example.com', 80), out: :stream]
-%Process{out: grep_stream} = Porcelain.spawn("grep", ["div", "-m", "4"], opts)
+Take a look at the [reference docs][ref] for the full description of all
+provided functions and supported options.
 
-IO.inspect Porcelain.shell("head -n 4 | wc -l", in: grep_stream).out
-```
-
-**Caveat #1**: we are using `head` above in order to stop reading input after
-the first 4 lines. Otherwise `wc` alone would wait indefenitily for EOF which
-cannot be signaled when using bare Erlang ports. The (_currently not
-implemented_) Goon driver fixes the issue.
-
-**Caveat #2**: of course it would be more efficient to just use shell piping if
-portability to non-POSIX systems isn't required.
-
-
-## Accessing the underlying port
-
-
-## Future work
-
-TODO:
-* mention wiki
-* mention drivers
-
-Porcelain relies on one external dependency to provide some of its features:
-[goon](https://github.com/alco/goon). Get the binary for your OS and put it in
-your application's working directory or somewhere in your `$PATH`.
-
-In case `goon` is not found, Porcelain will fall back to the pure Elixir driver.
+  [ref]: http://porcelain.readthedocs.org
 
 
 ## License
