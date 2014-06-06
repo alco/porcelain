@@ -40,9 +40,9 @@ IO.inspect result.out   #=> "file\nfrom\nlines\nread\n"
 
 ### Passing input and getting output
 
-Porcelain give you many options when it comes to interacting with external
+Porcelain gives you many options when it comes to interacting with external
 processes. It is possible to feed input from a file or a stream, same for
-output.
+output:
 
 ```elixir
 File.write!("input.txt", """
@@ -52,9 +52,9 @@ File.write!("input.txt", """
   ... >like this< the end.
   """)
 
-result = Porcelain.exec("grep", [">like this<", "-m", "2"],
-                        in: {:path, "input.txt"})
-IO.inspect result.out
+Porcelain.exec("grep", [">like this<", "-m", "2"],
+                    in: {:path, "input.txt"}, out: {:append, "output.txt"})
+IO.inspect File.read!("output.txt")
 #=> ">like this<\n... >like this< the end.\n"
 ```
 
@@ -67,10 +67,9 @@ In the next example we will use streams for both input and output.
 ```elixir
 alias Porcelain.Process
 
-instream = SocketStream.new('example.com', 80)
-opts = [in: instream, out: :stream]
-proc = %Process{out: outstream} =
-            Porcelain.spawn("grep", ["div", "-m", "4"], opts)
+opts = [in: SocketStream.new('example.com', 80), out: :stream]
+proc = %Process{out: outstream} = Porcelain.spawn("grep", ["div", "-m", "4"], opts)
+
 IO.write(outstream)
 #     div {
 #         div {
@@ -83,71 +82,40 @@ Process.closed?(proc)   #=> true
 The `SocketStream` module used above wraps a tcp socket in a stream. Its
 implementation can be found in the `test/test_helper.exs` file.
 
-
-### Communicating with long-running programs
-
-```elixir
-alias Porcelain, as: Porc
-
-{pid, _port} = Porc.spawn("cat", in: :pid, out: :buffer)
-
-Porc.send(pid, "Hello")
-Porc.send(pid, "\nWorld")
-Porc.send(pid, :eof)
-
-iex> flush
-#=> {#PID<0.51.0>, %Porc{status: 0, in: :pid, out: "Hello\nWorld", err: nil}}
-```
-
-### Stream API
-
-It is possible to spawn multiple process and chain them together. One can also
-use sockets and Elixir streams as sources of input.
+By using streams we can chain multiple external processes together:
 
 ```elixir
-sock = :gen_tcp.connect(...)
-pipe = Porc.spawn("sed 's/\(.*\)/  \1/'", in: {:socket, sock}, out: :pipe)
-Porc.spawn("tr a-z A-Z", in: {:pipe, pipe}, out: :stream)
-|> Stream.into(File.stream!("output.txt"))
+alias Porcelain.Process
+
+opts = [in: SocketStream.new('example.com', 80), out: :stream]
+%Process{out: grep_stream} = Porcelain.spawn("grep", ["div", "-m", "4"], opts)
+
+IO.inspect Porcelain.exec_shell("head -n 4 | wc -l", in: grep_stream).out
 ```
 
-In the above example two OS processes are spawned and chained together so that
-the output from one process flows into standard input of the other one.
+**Caveat #1**: we are using `head` above in order to stop reading input after
+the first 4 lines. Otherwise `wc` alone would wait indefenitily for EOF which
+cannot be signaled when using bare Erlang ports. The (_currently not
+implemented_) Goon driver fixes the issue.
 
-Roughly equivalent example, but this time using only streams to chain programs
-together.
-
-```elixir
-# by default stream splits the content into lines; we should probably be able
-# to customize that
-sock = :gen_tcp.connect(...)
-s1 = Porc.spawn("sed 's/\(.*\)/  \1/'", in: {:socket, sock}, out: :stream)
-s2 = Porc.spawn("tr a-z A-Z", in: :stream, out: :stream)
-s3 = Porc.spawn("sort", in: :stream, out: :stream)
-Stream.concat([s1, s2, s3]) |> Stream.each(&IO.puts/1)
-```
-
-Note the difference: when using pipes, the chaining will be performed at the
-OS level when possible. Using streams makes each program's output pass through
-Elixir before going as input into another program.
+**Caveat #2**: of course it would be more efficient to just use shell piping if
+portability to non-POSIX systems isn't required.
 
 
-## Prerequisites
+## Accessing the underlying port
+
+
+## Future work
+
+TODO:
+* mention wiki
+* mention drivers
 
 Porcelain relies on one external dependency to provide some of its features:
 [goon](https://github.com/alco/goon). Get the binary for your OS and put it in
 your application's working directory or somewhere in your `$PATH`.
 
 In case `goon` is not found, Porcelain will fall back to the pure Elixir driver.
-
-
-### Porcelain and OTP
-
-It is possible to spawn long-running tasks and communicate with them using
-standard OTP techniques. A spawned program can also be integrated into a
-supervision tree with ability to keep its state and restart in case of errors.
-
-*to be implemeted*
 
 
 ## License
