@@ -64,19 +64,9 @@ defmodule Porcelain.Driver.Simple do
       out_opt = {:stream, server}
     end
 
-    result_ret = case opts[:result] do
-      {:send, pid} ->
-        ref = make_ref()
-        result_opt = {:send, pid, ref}
-        {:send, ref}
-      other ->
-        result_opt = other
-        other
-    end
-
     pid = spawn(fn ->
       communicate(port, opts[:in], out_opt, opts[:err],
-          async_input: true, result: result_opt)
+          async_input: true, result: opts[:result])
     end)
     Port.connect(port, pid)
     :erlang.unlink(port)
@@ -91,7 +81,7 @@ defmodule Porcelain.Driver.Simple do
       parent: pid,
       out: out_ret,
       err: opts[:err],
-      result: result_ret
+      result: opts[:result]
     }
   end
 
@@ -213,7 +203,6 @@ defmodule Porcelain.Driver.Simple do
           nil               -> result
           :discard          -> nil
           :keep             -> wait_for_command(result)
-          {:send, pid, ref} -> send(pid, {ref, result})
         end
     end
   end

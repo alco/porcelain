@@ -29,22 +29,6 @@ defmodule PorcelainTest.SimpleAsyncTest do
     assert Process.closed?(proc)
   end
 
-  test "spawn send result" do
-    cmd = "head -n 3 | cut -b 1-4"
-    proc = Porcelain.spawn_shell(cmd,
-                in: "multiple\nlines\nof input\n", result: {:send, self()})
-    assert %Process{port: _, out: :string, err: nil, result: {:send, _}} = proc
-
-    ref = elem(proc.result, 1)
-    assert is_reference(ref)
-
-    :timer.sleep(100)
-
-    assert Process.closed?(proc)
-    assert_receive {^ref,
-        %Result{status: 0,out: "mult\nline\nof i\n", err: nil}}
-  end
-
   test "spawn send input" do
   end
 

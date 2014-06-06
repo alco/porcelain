@@ -136,9 +136,11 @@ defmodule Porcelain do
       Note that the underlying port implementation is message based. This means
       that the external program will be able to send all of its output to an
       Elixir process and terminate. The data will be kept in the Elixir
-      process's message box until the stream is consumed.
+      process's memory until the stream is consumed.
 
     * `err: :stream` – same as `:out`, but will return stderr as a stream.
+
+      **Caveat**: not supported in `Porcelain.Driver.Simple`.
 
     * `:result` – specify how the result of the external program should be
     returned after it has terminated.
@@ -156,13 +158,6 @@ defmodule Porcelain do
       * `:discard` – discards the result and automatically closes the port
         after program termination. Useful in combination with `out: :stream`
         and `err: :stream`.
-
-      * `{:send, <pid>}` – the result will be sent to `<pid>`. The
-        `Porcelain.Process` struct returned from `spawn/3` or `spawn_shell/2`
-        will have it's result field set to `{:send, <ref>}`. The actual message
-        with a `Porcelain.Result` struct will have this shape:
-
-              {<ref>, %Porcelain.Result{}}
 
   """
   @spec spawn(binary, [binary])            :: Porcelain.Process.t
@@ -237,7 +232,6 @@ defmodule Porcelain do
         {:err, :stream}     -> :ok
         {:result, :keep}    -> :ok
         {:result, :discard} -> :ok
-        {:result, {:send, pid}} when is_pid(pid) -> :ok
         _ -> nil
       end
       case compiled do
