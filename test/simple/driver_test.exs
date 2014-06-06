@@ -34,6 +34,14 @@ defmodule PorcelainTest.SimpleTest do
     assert result.out =~ ~r/illegal time format/
   end
 
+  test "env" do
+    cmd = "echo $custom_var"
+    assert exec(cmd, env: [custom_var: "hello"])
+           == %Result{out: "hello\n", err: nil, status: 0}
+    assert exec(cmd, env: %{"custom_var" => "bye"})
+           == %Result{out: "bye\n", err: nil, status: 0}
+  end
+
   test "input string" do
     cmd = {"grep", [">end<", "-m", "2"]}
     assert exec(cmd, in: "hi\n>end< once\nbye\n>end< twice\n")

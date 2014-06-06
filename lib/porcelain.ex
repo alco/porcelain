@@ -272,13 +272,23 @@ defmodule Porcelain do
 
   defp compile_env_opt(val) do
     {vars, ok?} = Enum.map_reduce(val, true, fn
-      x={name, val}, ok?
-        when (is_binary(name) or is_atom(name))
-         and (is_binary(val) or val == false) -> {x, ok?}
+      {name, val}, ok? when (is_binary(name) or is_atom(name))
+                        and (is_binary(val) or val == false) ->
+        {{convert_env_name(name), convert_env_val(val)}, ok?}
       other, _ -> {other, false}
     end)
     if ok?, do: {:ok, vars}
   end
+
+  defp convert_env_name(name) when is_binary(name),
+    do: String.to_char_list(name)
+
+  defp convert_env_name(name) when is_atom(name),
+    do: Atom.to_char_list(name)
+
+  defp convert_env_val(false), do: false
+
+  defp convert_env_val(bin), do: String.to_char_list(bin)
 
 
   # dynamic selection of the execution driver which does all the hard work

@@ -125,6 +125,9 @@ defmodule Porcelain.Driver.Simple do
     if opts[:err] == :out do
       ret = [:stderr_to_stdout|ret]
     end
+    if env=opts[:env] do
+      ret = [{:env, env}|ret]
+    end
     ret
   end
 
