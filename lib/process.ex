@@ -3,13 +3,13 @@ defmodule Porcelain.Process do
   Module for working with external processes started with `Porcelain.spawn/2`.
   """
 
-  alias __MODULE__
+  alias __MODULE__, as: P
 
   @doc """
   A struct representing an OS processes which provides the ability to
   exchange data with it.
   """
-  defstruct [:port, :out, :err]
+  defstruct [:port, :parent, :out, :err, :result]
 
 
   @doc """
@@ -21,9 +21,9 @@ defmodule Porcelain.Process do
   indicate the end of input. You should close the port explicitly using
   `close/1`.
   """
-  @spec send(t, iodata) :: iodata
+  @spec send_input(t, iodata) :: iodata
 
-  def send(%Process{port: port}, data) do
+  def send_input(%P{port: port}, data) do
     Port.command(port, data)
   end
 
@@ -32,11 +32,21 @@ defmodule Porcelain.Process do
   Wait for the external process to terminate.
 
   Returns `Porcelain.Result` struct with the process's exit status and output.
-  """
-  @spec await(t) :: %Porcelain.Result{}
+  Automatically closes the port in this case.
 
-  def await(%Process{}) do
-    %Porcelain.Result{}
+  If timeout value is specified and the external process fails to terminate
+  before it runs out, atom `:infinity` is returned.
+  """
+  @spec await(t, non_neg_integer | :infinity) :: %Porcelain.Result{}
+
+  def await(%P{parent: pid}, timeout \\ :infinity) do
+    ref = make_ref()
+    send(pid, {:get_result, self(), ref})
+    receive do
+      {^ref, result} -> result
+    after timeout ->
+      :timeout
+    end
   end
 
 
@@ -45,8 +55,8 @@ defmodule Porcelain.Process do
   """
   @spec closed?(t) :: true | false
 
-  def closed?(%Process{port: port}) do
-    Port.info(port) == :undefined
+  def closed?(%P{parent: pid}) do
+    not Process.alive?(pid)
   end
 
 
@@ -58,7 +68,19 @@ defmodule Porcelain.Process do
   """
   @spec close(t) :: true
 
-  def close(%Process{port: port}) do
-    Port.close(port)
+  def close(%P{port: port, parent: pid}) do
+    try do
+      Port.close(port)
+    rescue
+      _ -> nil
+    end
+
+    mon = Process.monitor(pid)
+    ref = make_ref()
+    send(pid, {:close, self(), ref})
+    receive do
+      {^ref, :closed} -> true
+      {:DOWN, ^mon, _, _, _info} -> true
+    end
   end
 end

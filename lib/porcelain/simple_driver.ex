@@ -45,7 +45,8 @@ defmodule Porcelain.Driver.Simple do
     opts = compile_options(opts)
     exe = find_executable(cmd, shell_flag)
     port = Port.open(exe, port_options(shell_flag, args, opts))
-    communicate(port, opts[:async_in], opts[:in], opts[:out], opts[:err])
+    communicate(port, opts[:in], opts[:out], opts[:err],
+        async_input: opts[:async_in])
   end
 
   defp do_spawn(cmd, args, opts, shell_flag) do
@@ -59,8 +60,19 @@ defmodule Porcelain.Driver.Simple do
       out_opt = {:stream, server}
     end
 
+    result_ret = case opts[:result] do
+      {:send, pid} ->
+        ref = make_ref()
+        result_opt = {:send, pid, ref}
+        {:send, ref}
+      other ->
+        result_opt = other
+        other
+    end
+
     pid = spawn(fn ->
-      communicate(port, true, opts[:in], out_opt, opts[:err])
+      communicate(port, opts[:in], out_opt, opts[:err],
+          async_input: true, result: result_opt)
     end)
     Port.connect(port, pid)
     :erlang.unlink(port)
@@ -70,7 +82,13 @@ defmodule Porcelain.Driver.Simple do
       {atom, ""} when atom in [:string, :iodata] -> atom
       _ -> out_opt
     end
-    %Porcelain.Process{port: port, out: out_ret, err: opts[:err]}
+    %Porcelain.Process{
+      port: port,
+      parent: pid,
+      out: out_ret,
+      err: opts[:err],
+      result: result_ret
+    }
   end
 
 
@@ -110,14 +128,14 @@ defmodule Porcelain.Driver.Simple do
     ret
   end
 
-  defp communicate(port, async_input?, input, output, error) do
+  defp communicate(port, input, output, error, opts) do
     input_fun = fn -> send_input(port, input) end
-    if async_input? do
+    if opts[:async_input] do
       spawn(input_fun)
     else
       input_fun.()
     end
-    collect_output(port, output, error)
+    collect_output(port, output, error, opts[:result])
   end
 
   defp send_input(port, input) do
@@ -171,18 +189,33 @@ defmodule Porcelain.Driver.Simple do
     end)
   end
 
-  defp collect_output(port, output, error) do
+  defp collect_output(port, output, error, result_opt) do
     receive do
       { ^port, {:data, data} } ->
         output = process_port_output(output, data)
-        collect_output(port, output, error)
+        collect_output(port, output, error, result_opt)
 
       { ^port, {:exit_status, status} } ->
-        %Porcelain.Result{
+        result = %Porcelain.Result{
           status: status,
           out: flatten(output),
           err: flatten(error)
         }
+        case result_opt do
+          nil               -> result
+          :discard          -> nil
+          :keep             -> wait_for_command(result)
+          {:send, pid, ref} -> send(pid, {ref, result})
+        end
+    end
+  end
+
+  defp wait_for_command(result) do
+    receive do
+      {:close, from, ref} ->
+        send(from, {ref, :closed})
+      {:get_result, from, ref} ->
+        send(from, {ref, result})
     end
   end
 

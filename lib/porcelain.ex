@@ -109,8 +109,13 @@ defmodule Porcelain do
 
 
   @doc """
-  Spawn an external process and return a `Process` struct to be able to
-  communicate with it.
+  Spawn an external process and return a `Porcelain.Process` struct to be able
+  to communicate with it.
+
+  You have to explicitly close the process after reading its output and when it
+  is no longer needed.
+
+  Use the `await/1` function to wait for the process to terminate.
 
   Supports all options defined for `exec/2` plus some additional ones:
 
@@ -126,6 +131,25 @@ defmodule Porcelain do
       process's message box until the stream is consumed.
 
     * `err: :stream` – same as `:out`, but will return stderr as a stream.
+
+    * `:result` – specify how the result of the external program should be
+    returned after it has terminated.
+
+      Possible values:
+
+      * `:keep` (default) – the result will be kept in memory until requested
+        by calling `Porcelain.Process.await/2`.
+
+      * `:discard` – discards the result and automatically closes the port
+        after program termination. Useful in combination with `out: :stream`
+        and `err: :stream`.
+
+      * `{:send, <pid>}` – the result will be sent to `<pid>`. The
+        `Porcelain.Process` struct returned from `spawn/2` will have it's
+        result field set to `{:send, <ref>}`. The actual message with
+        `Porcelain.Result` struct will have this shape:
+
+            {<ref>, %Porcelain.Result{}}
 
   """
   @spec spawn(cmdspec) :: %Process{}
@@ -184,11 +208,14 @@ defmodule Porcelain do
 
   defp compile_spawn_options(options) do
     {good, bad} = compile_exec_options(options)
-    Enum.reduce(bad, {good, []}, fn opt, {good, bad} ->
+    {good, bad} = Enum.reduce(bad, {good, []}, fn opt, {good, bad} ->
       compiled = case opt do
-        {:in, :receive} -> :ok
-        {:out, :stream} -> :ok
-        {:err, :stream} -> :ok
+        {:in, :receive}     -> :ok
+        {:out, :stream}     -> :ok
+        {:err, :stream}     -> :ok
+        {:result, :keep}    -> :ok
+        {:result, :discard} -> :ok
+        {:result, {:send, pid}} when is_pid(pid) -> :ok
         _ -> nil
       end
       case compiled do
@@ -196,6 +223,10 @@ defmodule Porcelain do
         nil -> {good, bad ++ [opt]}
       end
     end)
+    if not Keyword.has_key?(good, :result) do
+      good = Keyword.put(good, :result, :keep)
+    end
+    {good, bad}
   end
 
   defp compile_input_opt(opt) do
