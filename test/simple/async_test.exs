@@ -6,7 +6,6 @@ defmodule PorcelainTest.SimpleAsyncTest do
 
   test "spawn keep result" do
     cmd = "head -n 3 | cut -b 1-4"
-
     proc = Porcelain.spawn(cmd,
                 in: "multiple\nlines\nof input\n", result: :keep)
     assert %Process{port: _, out: :string, err: nil, result: :keep} = proc
@@ -21,7 +20,6 @@ defmodule PorcelainTest.SimpleAsyncTest do
 
   test "spawn discard result" do
     cmd = "head -n 3 | cut -b 1-4"
-
     proc = Porcelain.spawn(cmd,
                 in: "multiple\nlines\nof input\n", result: :discard)
     assert %Process{port: _, out: :string, err: nil, result: :discard} = proc
@@ -33,7 +31,6 @@ defmodule PorcelainTest.SimpleAsyncTest do
 
   test "spawn send result" do
     cmd = "head -n 3 | cut -b 1-4"
-
     proc = Porcelain.spawn(cmd,
                 in: "multiple\nlines\nof input\n", result: {:send, self()})
     assert %Process{port: _, out: :string, err: nil, result: {:send, _}} = proc

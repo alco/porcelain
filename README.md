@@ -10,51 +10,39 @@ richer functionality and simple API for managing external processes.
 Simply put, Porcelain removes the pain of dealing with ports and substitutes it
 with happiness and peace of mind.
 
-## Prerequisites
-
-Porcelain relies on one external dependency to provide some of its features:
-[goon](https://github.com/alco/goon). Get the binary for your OS and put it in
-your application's working directory or somewhere in your `$PATH`.
-
-In case `goon` is not found, Porcelain will fall back to the pure Elixir driver.
 
 ## Usage
 
-### Synchronous API
+Examples below show some of the common use cases. Refer to the API docs to
+learn the complete set of provided functions and options.
+
+
+### Launching one-off programs
+
+If you need to launch an external program, feed it some input and capture its output and maybe also exit status, use the `Porcelain.exec` function:
 
 ```elixir
-alias Porcelain, as: Porc
+alias Porcelain.Result
 
-## Capture stdout
-Porc.call("cat", in: "Hello world!")
-#=> {0, "Hello world!", ""}
+%Result{out: output, status: status} = Porcelain.exec("date")
+IO.inspect status       #=> 0
+IO.inspect output       #=> "Fri Jun  6 14:12:02 EEST 2014\n"
 
-## Capture stderr
-Porc.call("cat -g", in: "Hello world!")
-#=> {0, "", "cat: illegal option -- g\nusage: cat [-benstuv] [file ...]\n"}
+# Passing a string to exec() spawns system shell and runs the command in it
+result = Porcelain.exec("date | cut -b 1-3")
+IO.inspect result.out   #=> "Fri\n"
 
-## Receive output as messages
-ref = make_ref()
-Porc.call("cat", in: "Hello world!", out: {self, ref})
-iex> flush
-#=> {#Reference<0.0.0.207>, :stdout, "Hello world!"}
-
-## Using files for input and output
-File.open "data.txt", [:read], fn(f_in) ->
-  File.open "output.txt", [:write], fn(f_out) ->
-    Porc.call("cat", in: {:file, f_in}, out: {:file, f_out})
-  end
-end
-#=> {0, {:file, #PID<0.48.0>}, ""}
-```
-```sh
-$ cat data.txt
-Input from tile
-$ cat output.txt
-Input from tile
+# You may instead pass a tuple {progname, args} to launch the program directly
+File.write!("input.txt", "lines\nread\nfrom\nfile\n")
+result = Porcelain.exec({"sort", ["input.txt"]})
+IO.inspect result.out   #=> "file\nfrom\nlines\nread\n"
 ```
 
-### Async API
+
+### Passing input and getting output
+
+
+### Communicating with long-running programs
 
 ```elixir
 alias Porcelain, as: Porc
@@ -101,6 +89,16 @@ Note the difference: when using pipes, the chaining will be performed at the
 OS level when possible. Using streams makes each program's output pass through
 Elixir before going as input into another program.
 
+
+## Prerequisites
+
+Porcelain relies on one external dependency to provide some of its features:
+[goon](https://github.com/alco/goon). Get the binary for your OS and put it in
+your application's working directory or somewhere in your `$PATH`.
+
+In case `goon` is not found, Porcelain will fall back to the pure Elixir driver.
+
+
 ### Porcelain and OTP
 
 It is possible to spawn long-running tasks and communicate with them using
@@ -109,6 +107,7 @@ supervision tree with ability to keep its state and restart in case of errors.
 
 *to be implemeted*
 
----
 
-See the tests for more usage examples.
+## License
+
+This software is licensed under [the MIT license](LICENSE).
