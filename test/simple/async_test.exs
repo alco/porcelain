@@ -6,7 +6,7 @@ defmodule PorcelainTest.SimpleAsyncTest do
 
   test "spawn keep result" do
     cmd = "head -n 3 | cut -b 1-4"
-    proc = Porcelain.spawn(cmd,
+    proc = Porcelain.spawn_shell(cmd,
                 in: "multiple\nlines\nof input\n", result: :keep)
     assert %Process{port: _, out: :string, err: nil, result: :keep} = proc
 
@@ -20,7 +20,7 @@ defmodule PorcelainTest.SimpleAsyncTest do
 
   test "spawn discard result" do
     cmd = "head -n 3 | cut -b 1-4"
-    proc = Porcelain.spawn(cmd,
+    proc = Porcelain.spawn_shell(cmd,
                 in: "multiple\nlines\nof input\n", result: :discard)
     assert %Process{port: _, out: :string, err: nil, result: :discard} = proc
 
@@ -31,7 +31,7 @@ defmodule PorcelainTest.SimpleAsyncTest do
 
   test "spawn send result" do
     cmd = "head -n 3 | cut -b 1-4"
-    proc = Porcelain.spawn(cmd,
+    proc = Porcelain.spawn_shell(cmd,
                 in: "multiple\nlines\nof input\n", result: {:send, self()})
     assert %Process{port: _, out: :string, err: nil, result: {:send, _}} = proc
 
@@ -49,8 +49,6 @@ defmodule PorcelainTest.SimpleAsyncTest do
   end
 
   test "spawn streams" do
-    cmd = {"grep", [">end<", "-m", "2"]}
-
     pid = self()
 
     stream_fn = fn acc ->
@@ -62,7 +60,8 @@ defmodule PorcelainTest.SimpleAsyncTest do
     end
     instream = Stream.unfold(nil, stream_fn)
 
-    proc = Porcelain.spawn(cmd, in: instream, out: :stream, result: :discard)
+    proc = Porcelain.spawn("grep", [">end<", "-m", "2"],
+                        in: instream, out: :stream, result: :discard)
     assert %Process{port: _, out: _, err: nil} = proc
     assert is_port(proc.port)
     assert Enumerable.impl_for(proc.out) != nil

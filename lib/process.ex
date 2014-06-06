@@ -1,6 +1,7 @@
 defmodule Porcelain.Process do
   @moduledoc """
-  Module for working with external processes started with `Porcelain.spawn/2`.
+  Module for working with external processes launched with `Porcelain.spawn/3`
+  or `Porcelain.spawn_shell/2`.
   """
 
   alias __MODULE__, as: P
@@ -61,7 +62,8 @@ defmodule Porcelain.Process do
 
 
   @doc """
-  Closes the port to the external process created with `Porcelain.spawn/2`.
+  Closes the port to the external process created with `Porcelain.spawn/3` or
+  `Porcelain.spawn_shell/2`.
 
   Depending on the driver in use, this may or may not terminate the external
   process.

@@ -19,22 +19,21 @@ learn the complete set of provided functions and options.
 
 ### Launching one-off programs
 
-If you need to launch an external program, feed it some input and capture its output and maybe also exit status, use the `Porcelain.exec` function:
+If you need to launch an external program, feed it some input and capture its output and maybe also exit status, use `Porcelain.exec` or `Porcelain.shell`:
 
 ```elixir
 alias Porcelain.Result
 
-%Result{out: output, status: status} = Porcelain.exec("date")
-IO.inspect status       #=> 0
-IO.inspect output       #=> "Fri Jun  6 14:12:02 EEST 2014\n"
+%Result{out: output, status: status} = Porcelain.shell("date")
+IO.inspect status   #=> 0
+IO.inspect output   #=> "Fri Jun  6 14:12:02 EEST 2014\n"
 
-# Passing a string to exec() spawns system shell and runs the command in it
-result = Porcelain.exec("date | cut -b 1-3")
+result = Porcelain.shell("date | cut -b 1-3")
 IO.inspect result.out   #=> "Fri\n"
 
-# You may instead pass a tuple {progname, args} to launch the program directly
+# Use exec() when you want launch a program directly without using a shell
 File.write!("input.txt", "lines\nread\nfrom\nfile\n")
-result = Porcelain.exec({"sort", ["input.txt"]})
+result = Porcelain.exec("sort", ["input.txt"])
 IO.inspect result.out   #=> "file\nfrom\nlines\nread\n"
 ```
 

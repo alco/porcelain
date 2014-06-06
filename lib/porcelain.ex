@@ -8,27 +8,11 @@ defmodule Porcelain do
   end
 
 
-  @typedoc """
-  The `progspec` type represents a program to run. It can denote either a shell
-  invocation or a program name.
-
-  When it is a binary, it will be interpreted as a shell command. Porcelain
-  will spawn a system shell and pass the whole string to it.
-
-  This allows using shell features like setting variables, chaining multiple
-  programs with pipes, etc. The downside is that those advanced features may
-  be unavailable on some platforms.
-
-  When `progspec` is a tuple `{progname, args}`, Porcelain will look for the
-  program in PATH and launch it directly, passing the `args` list as
-  command-line arguments to it.
-  """
-  # TODO: check if ports workk with iodata arguments and names
-  @type progspec :: binary | {binary, [binary]}
-
-
   @doc """
   Execute a program synchronously.
+
+  Porcelain will look for the program in PATH and launch it directly, passing
+  the `args` list as command-line arguments to it.
 
   Feeds all input into the program (synchronously or concurrently with reading
   output; see `:async_in` option below) and waits for it to terminate. Returns
@@ -98,22 +82,35 @@ defmodule Porcelain do
       Basically, it accepts any kind of dict, including keyword lists.
 
   """
-  @spec exec(progspec) :: Porcelain.Result.t
-  @spec exec(progspec, Keyword.t) :: Porcelain.Result.t
+  # TODO: check if ports workk with iodata arguments and names
+  @spec exec(binary, [binary])            :: Porcelain.Result.t
+  @spec exec(binary, [binary], Keyword.t) :: Porcelain.Result.t
 
-  def exec(prog, options \\ [])
-
-  def exec(prog, options) when is_binary(prog) and is_list(options) do
-    catch_wrapper fn ->
-      driver().exec_shell(prog, compile_exec_options(options))
-    end
-  end
-
-  def exec({prog, args}, options)
-    when is_binary(prog) and is_list(args) and is_list(options)
+  def exec(prog, args, options \\ [])
+        when is_binary(prog) and is_list(args) and is_list(options)
   do
     catch_wrapper fn ->
       driver().exec(prog, args, compile_exec_options(options))
+    end
+  end
+
+
+  @doc """
+  Execute a shell invocation synchronously.
+
+  This function will launch a system shell and pass the invocation to it. This
+  allows using shell features like haining multiple programs with pipes. The
+  downside is that those advanced features may be unavailable on some
+  platforms.
+
+  It is similar to the `exec/3` function in all other respects.
+  """
+  @spec shell(binary)            :: Porcelain.Result.t
+  @spec shell(binary, Keyword.t) :: Porcelain.Result.t
+
+  def shell(cmd, options \\ []) when is_binary(cmd) and is_list(options) do
+    catch_wrapper fn ->
+      driver().exec_shell(cmd, compile_exec_options(options))
     end
   end
 
@@ -128,7 +125,7 @@ defmodule Porcelain do
   Use the `Porcelain.Process.await/2` function to wait for the process to
   terminate.
 
-  Supports all options defined for `exec/2` plus some additional ones:
+  Supports all options defined for `exec/3` plus some additional ones:
 
     * `in: :receive` – input is expected to be sent to the process in chunks
       using the `send/2` function.
@@ -156,29 +153,38 @@ defmodule Porcelain do
         and `err: :stream`.
 
       * `{:send, <pid>}` – the result will be sent to `<pid>`. The
-        `Porcelain.Process` struct returned from `spawn/2` will have it's
-        result field set to `{:send, <ref>}`. The actual message with
-        `Porcelain.Result` struct will have this shape:
+        `Porcelain.Process` struct returned from `spawn/3` or `spawn_shell/2`
+        will have it's result field set to `{:send, <ref>}`. The actual message
+        with `Porcelain.Result` struct will have this shape:
 
               {<ref>, %Porcelain.Result{}}
 
   """
-  @spec spawn(progspec) :: Porcelain.Process.t
-  @spec spawn(progspec, Keyword.t) :: Porcelain.Process.t
+  @spec spawn(binary, [binary])            :: Porcelain.Process.t
+  @spec spawn(binary, [binary], Keyword.t) :: Porcelain.Process.t
 
-  def spawn(prog, options \\ [])
-
-  def spawn(prog, options) when is_binary(prog) and is_list(options) do
-    catch_wrapper fn ->
-      driver().spawn_shell(prog, compile_spawn_options(options))
-    end
-  end
-
-  def spawn({prog, args}, options)
+  def spawn(prog, args, options \\ [])
     when is_binary(prog) and is_list(args) and is_list(options)
   do
     catch_wrapper fn ->
       driver().spawn(prog, args, compile_spawn_options(options))
+    end
+  end
+
+
+  @doc """
+  Spawn a system shell and execute the command in it.
+
+  Works similar to `spawn/3`.
+  """
+  @spec spawn_shell(binary)            :: Porcelain.Process.t
+  @spec spawn_shell(binary, Keyword.t) :: Porcelain.Process.t
+
+  def spawn_shell(cmd, options \\ [])
+        when is_binary(cmd) and is_list(options)
+  do
+    catch_wrapper fn ->
+      driver().spawn_shell(cmd, compile_spawn_options(options))
     end
   end
 
