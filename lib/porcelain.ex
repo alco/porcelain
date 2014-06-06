@@ -119,7 +119,7 @@ defmodule Porcelain do
   Spawn an external process and return a `Porcelain.Process` struct to be able
   to communicate with it.
 
-  You have to explicitly close the process after reading its output and when it
+  You have to explicitly stop the process after reading its output or when it
   is no longer needed.
 
   Use the `Porcelain.Process.await/2` function to wait for the process to

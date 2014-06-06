@@ -77,8 +77,7 @@ defmodule Porcelain.Driver.Simple do
       _ -> out_opt
     end
     %Porcelain.Process{
-      port: port,
-      parent: pid,
+      pid: pid,
       out: out_ret,
       err: opts[:err],
       result: opts[:result]
@@ -194,23 +193,32 @@ defmodule Porcelain.Driver.Simple do
         collect_output(port, output, error, result_opt)
 
       { ^port, {:exit_status, status} } ->
-        result = %Porcelain.Result{
-          status: status,
-          out: flatten(output),
-          err: flatten(error)
-        }
+        result = finalize_result(status, output, error)
         case result_opt do
           nil               -> result
           :discard          -> nil
           :keep             -> wait_for_command(result)
         end
+
+      {:input, data} ->
+        Port.command(port, data)
+        collect_output(port, output, error, result_opt)
+
+      {:stop, from, ref} ->
+        Port.close(port)
+        finalize_result(nil, output, error)
+        send(from, {ref, :stopped})
     end
+  end
+
+  defp finalize_result(status, out, err) do
+    %Porcelain.Result{status: status, out: flatten(out), err: flatten(err)}
   end
 
   defp wait_for_command(result) do
     receive do
-      {:close, from, ref} ->
-        send(from, {ref, :closed})
+      {:stop, from, ref} ->
+        send(from, {ref, :stopped})
       {:get_result, from, ref} ->
         send(from, {ref, result})
     end

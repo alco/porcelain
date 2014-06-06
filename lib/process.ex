@@ -7,10 +7,10 @@ defmodule Porcelain.Process do
   alias __MODULE__, as: P
 
   @doc """
-  A struct representing an OS processes which provides the ability to
+  A struct representing a wrapped OS processes which provides the ability to
   exchange data with it.
   """
-  defstruct [:port, :parent, :out, :err, :result]
+  defstruct [:pid, :out, :err, :result]
 
 
   @doc """
@@ -19,13 +19,13 @@ defmodule Porcelain.Process do
   End of input is indicated by sending an empty message.
 
   **Caveat**: when using `Porcelain.Driver.Simple`, it is not possible to
-  indicate the end of input. You should close the port explicitly using
-  `close/1`.
+  indicate the end of input. You should stop the process explicitly using
+  `stop/1`.
   """
   @spec send_input(t, iodata) :: iodata
 
-  def send_input(%P{port: port}, data) do
-    Port.command(port, data)
+  def send_input(%P{pid: pid}, data) do
+    send(pid, {:input, data})
   end
 
 
@@ -33,14 +33,14 @@ defmodule Porcelain.Process do
   Wait for the external process to terminate.
 
   Returns `Porcelain.Result` struct with the process's exit status and output.
-  Automatically closes the port in this case.
+  Automatically closes the underlying port in this case.
 
   If timeout value is specified and the external process fails to terminate
-  before it runs out, atom `:infinity` is returned.
+  before it runs out, atom `:timeout` is returned.
   """
-  @spec await(t, non_neg_integer | :infinity) :: %Porcelain.Result{}
+  @spec await(t, non_neg_integer | :infinity) :: Porcelain.Result.t
 
-  def await(%P{parent: pid}, timeout \\ :infinity) do
+  def await(%P{pid: pid}, timeout \\ :infinity) do
     ref = make_ref()
     send(pid, {:get_result, self(), ref})
     receive do
@@ -52,36 +52,27 @@ defmodule Porcelain.Process do
 
 
   @doc """
-  Check if the underlying port is closed.
+  Check if the process is still running.
   """
-  @spec closed?(t) :: true | false
+  @spec alive?(t) :: true | false
 
-  def closed?(%P{parent: pid}) do
-    not Process.alive?(pid)
+  def alive?(%P{pid: pid}) do
+    Process.alive?(pid)
   end
 
 
   @doc """
-  Closes the port to the external process created with `Porcelain.spawn/3` or
-  `Porcelain.spawn_shell/2`.
-
-  Depending on the driver in use, this may or may not terminate the external
-  process.
+  Stops the process created with `Porcelain.spawn/3` or
+  `Porcelain.spawn_shell/2`. Also closes the underlying port.
   """
-  @spec close(t) :: true
+  @spec stop(t) :: true
 
-  def close(%P{port: port, parent: pid}) do
-    try do
-      Port.close(port)
-    rescue
-      _ -> nil
-    end
-
+  def stop(%P{pid: pid}) do
     mon = Process.monitor(pid)
     ref = make_ref()
-    send(pid, {:close, self(), ref})
+    send(pid, {:stop, self(), ref})
     receive do
-      {^ref, :closed} -> true
+      {^ref, :stopped} -> true
       {:DOWN, ^mon, _, _, _info} -> true
     end
   end
