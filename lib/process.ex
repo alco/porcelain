@@ -61,7 +61,7 @@ defmodule Porcelain.Process do
 
 
   @doc """
-  Closes the port to the external process created with `spawn/2`.
+  Closes the port to the external process created with `Porcelain.spawn/2`.
 
   Depending on the driver in use, this may or may not terminate the external
   process.

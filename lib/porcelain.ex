@@ -115,7 +115,8 @@ defmodule Porcelain do
   You have to explicitly close the process after reading its output and when it
   is no longer needed.
 
-  Use the `await/1` function to wait for the process to terminate.
+  Use the `Porcelain.Process.await/2` function to wait for the process to
+  terminate.
 
   Supports all options defined for `exec/2` plus some additional ones:
 
@@ -149,7 +150,7 @@ defmodule Porcelain do
         result field set to `{:send, <ref>}`. The actual message with
         `Porcelain.Result` struct will have this shape:
 
-            {<ref>, %Porcelain.Result{}}
+              {<ref>, %Porcelain.Result{}}
 
   """
   @spec spawn(cmdspec) :: %Process{}
