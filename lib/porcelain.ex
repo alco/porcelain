@@ -128,7 +128,7 @@ defmodule Porcelain do
   Supports all options defined for `exec/3` plus some additional ones:
 
     * `in: :receive` – input is expected to be sent to the process in chunks
-      using the `send/2` function.
+      using the `Porcelain.Process.send_input/2` function.
 
     * `out: :stream` – the `:out` field of the returned `Process` struct will
       contain a stream of iodata.

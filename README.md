@@ -90,7 +90,7 @@ alias Porcelain.Process
 opts = [in: SocketStream.new('example.com', 80), out: :stream]
 %Process{out: grep_stream} = Porcelain.spawn("grep", ["div", "-m", "4"], opts)
 
-IO.inspect Porcelain.exec_shell("head -n 4 | wc -l", in: grep_stream).out
+IO.inspect Porcelain.shell("head -n 4 | wc -l", in: grep_stream).out
 ```
 
 **Caveat #1**: we are using `head` above in order to stop reading input after

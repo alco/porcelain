@@ -22,19 +22,23 @@ defmodule Porcelain.Driver.Simple do
 
   alias Porcelain.Driver.Simple.StreamServer
 
+  @doc false
   def exec(prog, args, opts) do
     do_exec(prog, args, opts, :noshell)
   end
 
+  @doc false
   def exec_shell(prog, opts) do
     do_exec(prog, nil, opts, :shell)
   end
 
 
+  @doc false
   def spawn(prog, args, opts) do
     do_spawn(prog, args, opts, :noshell)
   end
 
+  @doc false
   def spawn_shell(prog, opts) do
     do_spawn(prog, nil, opts, :shell)
   end
@@ -100,6 +104,7 @@ defmodule Porcelain.Driver.Simple do
     do: throw "Invalid options: #{inspect extra_opts}"
 
 
+  @doc false
   def find_executable(prog, :noshell) do
     if exe=:os.find_executable(:erlang.binary_to_list(prog)) do
       {:spawn_executable, exe}
