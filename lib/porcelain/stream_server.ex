@@ -26,13 +26,13 @@ defmodule Porcelain.Driver.Simple.StreamServer do
 
   ###
 
-  def handle_call(:get_data, from, state(data: [])=state) do
-    {:noreply, state(state, client: from)}
+  def handle_call(:get_data, _from, state(done: true, data: data)) do
+    reply = if data == [], do: nil, else: data
+    {:stop, :shutdown, reply, nil}
   end
 
-  def handle_call(:get_data, _from, state(done: true, data: data)) do
-    # {:stop, reason, reply, new_state}
-    {:stop, :shutdown, data, nil}
+  def handle_call(:get_data, from, state(data: [])=state) do
+    {:noreply, state(state, client: from)}
   end
 
   def handle_call(:get_data, _from, state(data: data)=state) do

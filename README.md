@@ -19,7 +19,7 @@ learn the complete set of provided functions and options.
 
 ### Launching one-off programs
 
-If you need to launch an external program, feed it some input and capture its output and maybe also exit status, use `Porcelain.exec` or `Porcelain.shell`:
+If you need to launch an external program, feed it some input and capture its output and maybe also exit status, use `exec()` or `shell()`:
 
 ```elixir
 alias Porcelain.Result
@@ -39,6 +39,49 @@ IO.inspect result.out   #=> "file\nfrom\nlines\nread\n"
 
 
 ### Passing input and getting output
+
+Porcelain give you many options when it comes to interacting with external
+processes. It is possible to feed input from a file or a stream, same for
+output.
+
+```elixir
+File.write!("input.txt", """
+  This file contains some patterns
+  >like this<
+  interspersed with other text
+  ... >like this< the end.
+  """)
+
+result = Porcelain.exec("grep", [">like this<", "-m", "2"],
+                        in: {:path, "input.txt"})
+IO.inspect result.out
+#=> ">like this<\n... >like this< the end.\n"
+```
+
+Programs can be spawned asynchronously (using `spawn()` and `spawn_shell()`)
+allowing for continuously exchaning data between Elixir and the external
+process.
+
+In the next example we will use streams for both input and output.
+
+```elixir
+alias Porcelain.Process
+
+instream = SocketStream.new('example.com', 80)
+opts = [in: instream, out: :stream]
+proc = %Process{out: outstream} =
+            Porcelain.spawn("grep", ["div", "-m", "4"], opts)
+IO.write(outstream)
+#     div {
+#         div {
+# <div>
+# </div>
+
+Process.closed?(proc)   #=> true
+```
+
+The `SocketStream` module used above wraps a tcp socket in a stream. Its
+implementation can be found in the `test/test_helper.exs` file.
 
 
 ### Communicating with long-running programs
