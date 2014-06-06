@@ -7,6 +7,9 @@ Launch and communicate with external OS processes in Elixir without limitations
 of Erlang ports. Porcelain builds on ports for easy integration, but provides
 richer functionality and simple API for managing external processes.
 
+Simply put, Porcelain removes the pain of dealing with ports and substitutes it
+with happiness and peace of mind.
+
 ## Prerequisites
 
 Porcelain relies on one external dependency to provide some of its features:
