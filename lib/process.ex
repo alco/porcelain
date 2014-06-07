@@ -41,11 +41,16 @@ defmodule Porcelain.Process do
   @spec await(t, non_neg_integer | :infinity) :: Porcelain.Result.t
 
   def await(%P{pid: pid}, timeout \\ :infinity) do
+    mon = Process.monitor(pid)
     ref = make_ref()
     send(pid, {:get_result, self(), ref})
     receive do
-      {^ref, result} -> result
+      {^ref, result} ->
+        Process.demonitor(mon, [:flush])
+        result
+      {:DOWN, ^mon, _, _, _info} -> {:error, :noproc}
     after timeout ->
+      Process.demonitor(mon, [:flush])
       :timeout
     end
   end
@@ -72,7 +77,9 @@ defmodule Porcelain.Process do
     ref = make_ref()
     send(pid, {:stop, self(), ref})
     receive do
-      {^ref, :stopped} -> true
+      {^ref, :stopped} ->
+        Process.demonitor(mon, [:flush])
+        true
       {:DOWN, ^mon, _, _, _info} -> true
     end
   end

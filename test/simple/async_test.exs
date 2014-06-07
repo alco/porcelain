@@ -29,6 +29,19 @@ defmodule PorcelainTest.SimpleAsyncTest do
     refute Proc.alive?(proc)
   end
 
+  test "spawn and stop" do
+    cmd = "grep whatever"
+    proc = Porcelain.spawn_shell(cmd, in: "whatever", result: :discard)
+
+    :timer.sleep(100)
+    assert Proc.alive?(proc)
+
+    Proc.stop(proc)
+    refute Proc.alive?(proc)
+
+    assert Proc.await(proc) == {:error, :noproc}
+  end
+
   test "spawn send input" do
     cmd = "grep ':mark:' -m 2 --line-buffered"
     proc = Porcelain.spawn_shell(cmd, in: :receive, out: :stream)
