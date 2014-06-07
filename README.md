@@ -90,13 +90,11 @@ process.
 In the next example we will use streams for both input and output.
 
 ```elixir
-### TODO: fix this example
-
-alias Porcelain.Process
+alias Porcelain.Process, as: Proc
 
 instream = SocketStream.new('example.com', 80)
 opts = [in: instream, out: :stream]
-proc = %Process{out: outstream} = Porcelain.spawn("grep", ["div", "-m", "4"], opts)
+proc = %Proc{out: outstream} = Porcelain.spawn("grep", ["div", "-m", "4"], opts)
 
 Enum.into(outstream, IO.stream(:stdio, :line))
 #     div {
@@ -104,11 +102,11 @@ Enum.into(outstream, IO.stream(:stdio, :line))
 # <div>
 # </div>
 
-Process.alive?(proc)   #=> false
+Proc.alive?(proc)   #=> false
 ```
 
 The `SocketStream` module used above wraps a tcp socket in a stream. Its
-implementation can be found in the `test/test_helper.exs` file.
+implementation can be found in the `test/util/socket_stream.exs` file.
 
 
 ## Going deeper

@@ -56,7 +56,6 @@ defmodule Porcelain.Driver.Simple do
   defp do_spawn(prog, args, opts, shell_flag) do
     opts = compile_options(opts)
     exe = find_executable(prog, shell_flag)
-    port = Port.open(exe, port_options(shell_flag, args, opts))
 
     out_opt = opts[:out]
     if out_opt == :stream do
@@ -65,11 +64,10 @@ defmodule Porcelain.Driver.Simple do
     end
 
     pid = spawn(fn ->
+      port = Port.open(exe, port_options(shell_flag, args, opts))
       communicate(port, opts[:in], out_opt, opts[:err],
           async_input: true, result: opts[:result])
     end)
-    Port.connect(port, pid)
-    :erlang.unlink(port)
 
     out_ret = case out_opt do
       {:stream, server} -> Stream.unfold(server, &read_stream/1)
@@ -158,7 +156,7 @@ defmodule Porcelain.Driver.Simple do
 
   defp read_stream(server) do
     case StreamServer.get_data(server) do
-      nil -> nil
+      nil  -> nil
       data -> {data, server}
     end
   end
@@ -177,12 +175,20 @@ defmodule Porcelain.Driver.Simple do
   end
 
   defp stream_to_port(enum, port) do
-    Enum.each(enum, fn
-      iodata when is_list(iodata) or is_binary(iodata) ->
-        Port.command(port, iodata)
-      byte ->
-        Port.command(port, [byte])
-    end)
+    # set up a try block, because the port may close before consuming all input
+    try do
+      Enum.each(enum, fn
+        iodata when is_list(iodata) or is_binary(iodata) ->
+          # the sleep is needed to work around the problem of port hanging
+          :timer.sleep(1)
+          Port.command(port, iodata, [:nosuspend])
+        byte ->
+          :timer.sleep(1)
+          Port.command(port, [byte])
+      end)
+    catch
+      :error, :badarg -> nil
+    end
   end
 
   defp collect_output(port, output, error, result_opt) do
