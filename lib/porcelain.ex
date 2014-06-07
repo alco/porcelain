@@ -20,7 +20,7 @@ defmodule Porcelain do
 
   When no options are passed, the following defaults will be used:
 
-      [in: "", async_in: true, out: :string, err: nil]
+      [in: "", out: :string, err: nil]
 
   This will run the program with no input and will capture its standard output.
 
