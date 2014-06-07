@@ -153,7 +153,7 @@ defmodule Porcelain do
 
       * `:keep` – the result will be kept in memory until requested by calling
         `Porcelain.Process.await/2` or discarded by calling
-        `Porcelain.Process.close/1`.
+        `Porcelain.Process.stop/1`.
 
       * `:discard` – discards the result and automatically closes the port
         after program termination. Useful in combination with `out: :stream`
