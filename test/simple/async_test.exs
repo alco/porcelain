@@ -1,20 +1,20 @@
 defmodule PorcelainTest.SimpleAsyncTest do
   use ExUnit.Case
 
-  alias Porcelain.Process
+  alias Porcelain.Process, as: Proc
   alias Porcelain.Result
 
   test "spawn keep result" do
     cmd = "head -n 3 | cut -b 1-4"
     proc = Porcelain.spawn_shell(cmd,
                 in: "multiple\nlines\nof input\n")
-    assert %Process{out: :string, err: nil} = proc
+    assert %Proc{out: :string, err: nil} = proc
 
     :timer.sleep(100)
 
-    assert Process.alive?(proc)
-    result = Process.await(proc)
-    refute Process.alive?(proc)
+    assert Proc.alive?(proc)
+    result = Proc.await(proc)
+    refute Proc.alive?(proc)
     assert %Result{status: 0, out: "mult\nline\nof i\n", err: nil} = result
   end
 
@@ -22,14 +22,35 @@ defmodule PorcelainTest.SimpleAsyncTest do
     cmd = "head -n 3 | cut -b 1-4"
     proc = Porcelain.spawn_shell(cmd,
                 in: "multiple\nlines\nof input\n", result: :discard)
-    assert %Process{out: :string, err: nil, result: :discard} = proc
+    assert %Proc{out: :string, err: nil} = proc
 
     :timer.sleep(100)
 
-    refute Process.alive?(proc)
+    refute Proc.alive?(proc)
   end
 
   test "spawn send input" do
+    cmd = "grep ':mark:' -m 2 --line-buffered"
+    proc = Porcelain.spawn_shell(cmd, in: :receive, out: :stream)
+
+    assert Enumerable.impl_for(proc.out) != nil
+
+    pid = spawn(fn ->
+      Proc.send_input(proc, "hello\n")
+      Proc.send_input(proc, ":mark:\n")
+      :timer.sleep(10)
+      Proc.send_input(proc, "\n ignored \n")
+      Proc.send_input(proc, ":mark:")
+      Proc.send_input(proc, "\n ignored as well")
+    end)
+
+    count = Enum.reduce(proc.out, 0, fn line, count ->
+      assert line == ":mark:\n"
+      count + 1
+    end)
+    assert count == 2
+    refute Proc.alive?(proc)
+    refute Process.alive?(pid)
   end
 
   test "spawn streams" do
@@ -46,7 +67,7 @@ defmodule PorcelainTest.SimpleAsyncTest do
 
     proc = Porcelain.spawn("grep", [">end<", "-m", "2"],
                         in: instream, out: :stream)
-    assert %Process{err: nil} = proc
+    assert %Proc{err: nil} = proc
     assert is_pid(proc.pid)
     assert Enumerable.impl_for(proc.out) != nil
 
@@ -69,7 +90,7 @@ defmodule PorcelainTest.SimpleAsyncTest do
     end
 
     refute_receive :ok
-    assert Process.alive?(proc)
+    assert Proc.alive?(proc)
 
     receive do
       {:get_data, pid} -> send(pid, {self(), "\n"})
@@ -77,6 +98,6 @@ defmodule PorcelainTest.SimpleAsyncTest do
     assert_receive :ok
     assert_receive "hello world|>end<|\n>end<\n"
 
-    refute Process.alive?(proc)
+    refute Proc.alive?(proc)
   end
 end

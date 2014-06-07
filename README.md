@@ -1,8 +1,6 @@
 Porcelain
 =========
 
-**The library is undergoing a revamp. Some things in this README are a lie**
-
 Launch and communicate with external OS processes in Elixir without limitations
 of Erlang ports. Porcelain builds on ports for easy integration, but provides
 richer functionality and simple API for managing external processes.
@@ -106,7 +104,7 @@ Enum.into(outstream, IO.stream(:stdio, :line))
 # <div>
 # </div>
 
-Process.closed?(proc)   #=> true
+Process.alive?(proc)   #=> false
 ```
 
 The `SocketStream` module used above wraps a tcp socket in a stream. Its

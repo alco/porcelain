@@ -80,7 +80,6 @@ defmodule Porcelain.Driver.Simple do
       pid: pid,
       out: out_ret,
       err: opts[:err],
-      result: opts[:result]
     }
   end
 

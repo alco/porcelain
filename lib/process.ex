@@ -10,7 +10,7 @@ defmodule Porcelain.Process do
   A struct representing a wrapped OS processes which provides the ability to
   exchange data with it.
   """
-  defstruct [:pid, :out, :err, :result]
+  defstruct [:pid, :out, :err]
 
 
   @doc """
