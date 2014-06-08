@@ -18,7 +18,7 @@ defmodule Porcelain.Process do
 
   End of input is indicated by sending an empty message.
 
-  **Caveat**: when using `Porcelain.Driver.Simple`, it is not possible to
+  **Caveat**: when using `Porcelain.Driver.Basic`, it is not possible to
   indicate the end of input. You should stop the process explicitly using
   `stop/1`.
   """

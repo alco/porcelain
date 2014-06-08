@@ -1,4 +1,4 @@
-defmodule Porcelain.Driver.Simple.StreamServer do
+defmodule Porcelain.Driver.Basic.StreamServer do
   @moduledoc false
 
   # Internal module used to make output streams work

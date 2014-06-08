@@ -1,4 +1,4 @@
-defmodule PorcelainTest.SimpleErrorsTest do
+defmodule PorcelainTest.ErrorsTest do
   use ExUnit.Case
 
   # TODO: throw exceptions

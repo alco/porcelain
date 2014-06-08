@@ -1,4 +1,4 @@
-defmodule Porcelain.Driver.Simple do
+defmodule Porcelain.Driver.Basic do
   @moduledoc """
   Porcelain driver that offers basic functionality for interacting with
   external programs.
@@ -20,7 +20,7 @@ defmodule Porcelain.Driver.Simple do
 
   """
 
-  alias Porcelain.Driver.Simple.StreamServer
+  alias Porcelain.Driver.Basic.StreamServer
 
   @doc false
   def exec(prog, args, opts) do

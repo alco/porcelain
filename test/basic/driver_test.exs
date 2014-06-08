@@ -1,4 +1,4 @@
-defmodule PorcelainTest.SimpleTest do
+defmodule PorcelainTest.BasicTest do
   use ExUnit.Case
 
   import TestUtil

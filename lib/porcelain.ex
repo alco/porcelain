@@ -72,7 +72,7 @@ defmodule Porcelain do
       Possible values are the same as for `:out`. In addition, it accepts the
       atom `:out` which denotes redirecting stderr to stdout.
 
-      **Caveat**: when using `Porcelain.Driver.Simple`, the only supported
+      **Caveat**: when using `Porcelain.Driver.Basic`, the only supported
       values are `nil` (stderr will be printed to the terminal) and `:out`.
 
     * `:dir` – takes a path that will be used as the directory in which the
@@ -134,7 +134,7 @@ defmodule Porcelain do
       using the `Porcelain.Process.send_input/2` function.
 
     * `:out` and `:err` can choose from a few more values (with the familiar
-      caveat that `Porcelain.Driver.Simple` does not support them for `:err`):
+      caveat that `Porcelain.Driver.Basic` does not support them for `:err`):
 
         - `:stream` – the corresponding field of the returned `Process` struct
           will contain a stream of iodata.
@@ -346,7 +346,7 @@ defmodule Porcelain do
   # dynamic selection of the execution driver which does all the hard work
   defp driver() do
     case :application.get_env(:porcelain, :driver) do
-      :undefined -> Porcelain.Driver.Simple
+      :undefined -> Porcelain.Driver.Basic
       other -> other
     end
   end
