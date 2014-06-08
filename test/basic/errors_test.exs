@@ -1,16 +1,19 @@
 defmodule PorcelainTest.ErrorsTest do
   use ExUnit.Case
 
-  # TODO: throw exceptions
-
   import Porcelain, only: [shell: 2, exec: 2]
   alias Porcelain.Result
 
   test "bad option" do
-    assert shell("whatever", option: "value")
-           == {:error, "Invalid options: [option: \"value\"]"}
-    assert shell("whatever", in: :receive)
-           == {:error, "Invalid options: [in: :receive]"}
+    msg = "Invalid options: [option: \"value\"]"
+    assert_raise Porcelain.UsageError, msg, fn ->
+      shell("whatever", option: "value")
+    end
+
+    msg = "Invalid options: [in: :receive]"
+    assert_raise Porcelain.UsageError, msg, fn ->
+      shell("whatever", in: :receive)
+    end
   end
 
   test "non-existent program" do

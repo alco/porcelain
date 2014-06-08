@@ -88,8 +88,10 @@ defmodule Porcelain.Driver.Basic do
     opts
   end
 
-  defp compile_options({_opts, extra_opts}),
-    do: throw "Invalid options: #{inspect extra_opts}"
+  defp compile_options({_opts, extra_opts}) do
+    msg = "Invalid options: #{inspect extra_opts}"
+    raise Porcelain.UsageError, message: msg
+  end
 
 
   @doc false
