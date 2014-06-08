@@ -1,9 +1,37 @@
 defmodule Porcelain do
+  @moduledoc """
+  The main module exposing the public API of Porcelain.
+
+  ## Basic concepts
+
+  Functions in this module can either spawn external programs directly
+  (`exec/3` and `spawn/3`) or using a system shell (`shell/2` and
+  `spawn_shell/2`).
+
+  Functions `exec/3` and `shell/2` are synchronous (or blocking), meaning they
+  don't return until the external program terminates.
+
+  Functions `spawn/3` and `spawn_shell/2` are non-blocking: they immediately
+  return a `Porcelain.Process` struct and use one of the available ways to
+  exchange input and output with the external process asynchronously.
+
+  ## Error handling
+
+  Using undefined options, passing invalid values to options or any function
+  arguments will fail with a function clause error or `Porcelain.UsageError`
+  exception. Those are programmer errors and have to be fixed.
+
+  Any other kinds of runtime errors are reported by returning an error tuple:
+  `{:error, <reason>}` where `<reason>` is a string explaining the error.
+  """
+
+
   defmodule Result do
-    @doc """
+    @moduledoc """
     A struct containing the result of running a program after it has
     terminated.
     """
+
     defstruct [:status, :out, :err]
   end
 
