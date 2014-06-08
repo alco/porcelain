@@ -31,6 +31,11 @@ defmodule PorcelainTest.SimpleTest do
     assert result.out =~ ~r/illegal time format/
   end
 
+  test "dir" do
+    assert exec("sort", ["input.txt"], dir: fixture_path(""))
+           == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}
+  end
+
   test "env" do
     cmd = "echo $custom_var"
     assert shell(cmd, env: [custom_var: "hello"])

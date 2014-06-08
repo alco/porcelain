@@ -75,6 +75,9 @@ defmodule Porcelain do
       **Caveat**: when using `Porcelain.Driver.Simple`, the only supported
       values are `nil` (stderr will be printed to the terminal) and `:out`.
 
+    * `:dir` – takes a path that will be used as the directory in which the
+      program will be launched.
+
     * `:env` – set additional environment variables for the program. The value
       should be an enumerable with elements of the shape `{<key>, <val>}` where
       `<key>` is an atom or a binary and `<val>` is a binary or `false`
@@ -206,6 +209,10 @@ defmodule Porcelain do
         :out -> compile_output_opt(val)
         :err -> compile_error_opt(val)
         :env -> compile_env_opt(val)
+        :dir ->
+          if is_binary(val) do
+            {:ok, val}
+          end
         :async_in ->
           if val in [true, false] do
             {:ok, val}
