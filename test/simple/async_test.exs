@@ -85,6 +85,7 @@ defmodule PorcelainTest.SimpleAsyncTest do
     assert_receive {^proc_pid, :data, "123 :mark:\n"}
     assert_receive {^proc_pid, :result,
                       %Result{status: 0, out: {:send, ^self_pid}, err: nil}}
+    refute Proc.alive?(proc)
   end
 
   test "spawn message passing no result" do
@@ -99,6 +100,7 @@ defmodule PorcelainTest.SimpleAsyncTest do
     Proc.send_input(proc, "\n-")
     assert_receive {^proc_pid, :data, "-:mark:-\n"}
     assert_receive {^proc_pid, :result, nil}
+    refute Proc.alive?(proc)
   end
 
   test "spawn streams" do

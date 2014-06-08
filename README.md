@@ -108,6 +108,32 @@ Proc.alive?(proc)   #=> false
 The `SocketStream` module used above wraps a tcp socket in a stream. Its
 implementation can be found in the `test/util/socket_stream.exs` file.
 
+If you prefer to exchange messages with the external process, you can do that:
+
+```elixir
+alias Porcelain.Process, as: Proc
+alias Porcelain.Result
+
+proc = %Proc{pid: pid} =
+  Porcelain.spawn_shell("grep ohai -m 2 --line-buffered",
+                                in: :receive, out: {:send, self()})
+
+Proc.send_input(proc, "ohai proc\n")
+receive do
+  {^pid, :data, data} -> IO.inspect data   #=> "ohai proc\n"
+end
+
+Proc.send_input(proc, "this won't match\n")
+Proc.send_input(proc, "ohai")
+Proc.send_input(proc, "\n")
+receive do
+  {^pid, :data, data} -> IO.inspect data   #=> "ohai\n"
+end
+receive do
+  {^pid, :result, %Result{status: status}} -> IO.inspect status   #=> 0
+end
+```
+
 
 ## Going deeper
 
