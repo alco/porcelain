@@ -85,7 +85,6 @@ defmodule Porcelain do
       Basically, it accepts any kind of dict, including keyword lists.
 
   """
-  # TODO: check if ports workk with iodata arguments and names
   @spec exec(binary, [binary])            :: Porcelain.Result.t
   @spec exec(binary, [binary], Keyword.t) :: Porcelain.Result.t
 
@@ -221,51 +220,62 @@ defmodule Porcelain do
 
   defp compile_exec_options(options) do
     {good, bad} = Enum.reduce(options, {[], []}, fn {name, val}, {good, bad} ->
-      compiled = case name do
-        :in  -> compile_input_opt(val)
-        :out -> compile_output_opt(val)
-        :err -> compile_error_opt(val)
-        :env -> compile_env_opt(val)
-        :dir ->
-          if is_binary(val) do
-            {:ok, val}
-          end
-        :async_in ->
-          if val in [true, false] do
-            {:ok, val}
-          end
-        _ -> nil
-      end
-      case compiled do
+      case compile_exec_opt(name, val) do
         nil        -> {good, bad ++ [{name, val}]}
         {:ok, opt} -> {good ++ [{name, opt}], bad}
       end
     end)
+    {apply_exec_defaults(options, good), bad}
+  end
+
+  defp compile_exec_opt(name, val) do
+    case name do
+      :in  -> compile_input_opt(val)
+      :out -> compile_output_opt(val)
+      :err -> compile_error_opt(val)
+      :env -> compile_env_opt(val)
+      :dir when is_binary(val) ->
+        {:ok, val}
+      :async_in when val in [true, false] ->
+        {:ok, val}
+      _ -> nil
+    end
+  end
+
+  defp apply_exec_defaults(options, good) do
     if not Keyword.has_key?(options, :out) do
       good = Keyword.put(good, :out, {:string, ""})
     end
-    {good, bad}
+    good
   end
+
 
   defp compile_spawn_options(options) do
     {good, bad} = compile_exec_options(options)
     {good, bad} = Enum.reduce(bad, {good, []}, fn opt, {good, bad} ->
-      compiled = case opt do
-        {:in, :receive}     -> :ok
-        {:out, :stream}     -> :ok
-        {:out, {:send, pid}} when is_pid(pid) ->
-          :ok
-        {:err, :stream}     -> :ok
-        {:result, :keep}    -> :ok
-        {:result, :discard} -> :ok
-        _ -> nil
-      end
-      case compiled do
+      case compile_spawn_opt(opt) do
         :ok -> {good ++ [opt], bad}
         nil -> {good, bad ++ [opt]}
       end
     end)
-    if not Keyword.has_key?(good, :result) do
+    {apply_spawn_defaults(options, good), bad}
+  end
+
+  defp compile_spawn_opt(opt) do
+    case opt do
+      {:in, :receive}     -> :ok
+      {:out, :stream}     -> :ok
+      {:out, {:send, pid}} when is_pid(pid) ->
+        :ok
+      {:err, :stream}     -> :ok
+      {:result, :keep}    -> :ok
+      {:result, :discard} -> :ok
+      _ -> nil
+    end
+  end
+
+  defp apply_spawn_defaults(options, good) do
+    if not Keyword.has_key?(options, :result) do
       default =
         if keep_result?(good[:out]) or keep_result?(good[:err]) do
           :keep
@@ -274,13 +284,14 @@ defmodule Porcelain do
         end
       good = Keyword.put(good, :result, default)
     end
-    {good, bad}
+    good
   end
 
   defp keep_result?({:string, _}), do: true
   defp keep_result?({:iodata, _}), do: true
   defp keep_result?({:send, _}), do: true
   defp keep_result?(_), do: false
+
 
   defp compile_input_opt(opt) do
     result = case opt do
@@ -316,7 +327,6 @@ defmodule Porcelain do
       {:file, fid}=x when is_pid(fid)        -> x
       {:path, path}=x when is_binary(path)   -> x
       {:append, path}=x when is_binary(path) -> x
-      #{pid, ref} when is_pid(pid) -> { pid, ref }
       _ -> :badval
     end
     if result != :badval, do: {:ok, result}
