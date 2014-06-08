@@ -66,6 +66,41 @@ defmodule PorcelainTest.SimpleAsyncTest do
     refute Process.alive?(pid)
   end
 
+  test "spawn message passing" do
+    self_pid = self()
+    proc = Porcelain.spawn("grep", [":mark:", "-m", "2", "--line-buffered"],
+                           in: :receive, out: {:send, self_pid})
+    proc_pid = proc.pid
+
+    Proc.send_input(proc, ":mark:")
+    refute_receive _
+
+    Proc.send_input(proc, "\n")
+    assert_receive {^proc_pid, :data, ":mark:\n"}
+
+    Proc.send_input(proc, "ignore me\n")
+    refute_receive _
+
+    Proc.send_input(proc, "123 :mark:\n")
+    assert_receive {^proc_pid, :data, "123 :mark:\n"}
+    assert_receive {^proc_pid, :result,
+                      %Result{status: 0, out: {:send, ^self_pid}, err: nil}}
+  end
+
+  test "spawn message passing no result" do
+    self_pid = self()
+    proc = Porcelain.spawn_shell("grep :mark: -m 1",
+                       in: :receive, out: {:send, self_pid}, result: :discard)
+    proc_pid = proc.pid
+
+    Proc.send_input(proc, "-:mark:-")
+    refute_receive _
+
+    Proc.send_input(proc, "\n-")
+    assert_receive {^proc_pid, :data, "-:mark:-\n"}
+    assert_receive {^proc_pid, :result, nil}
+  end
+
   test "spawn streams" do
     pid = self()
 

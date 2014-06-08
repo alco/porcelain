@@ -133,17 +133,34 @@ defmodule Porcelain do
     * `in: :receive` – input is expected to be sent to the process in chunks
       using the `Porcelain.Process.send_input/2` function.
 
-    * `out: :stream` – the `:out` field of the returned `Process` struct will
-      contain a stream of iodata.
+    * `:out` and `:err` can choose from a few more values (with the familiar
+      caveat that `Porcelain.Driver.Simple` does not support them for `:err`):
 
-      Note that the underlying port implementation is message based. This means
-      that the external program will be able to send all of its output to an
-      Elixir process and terminate. The data will be kept in the Elixir
-      process's memory until the stream is consumed.
+        - `:stream` – the corresponding field of the returned `Process` struct
+          will contain a stream of iodata.
 
-    * `err: :stream` – same as `:out`, but will return stderr as a stream.
+          Note that the underlying port implementation is message based. This
+          means that the external program will be able to send all of its
+          output to an Elixir process and terminate. The data will be kept in
+          the Elixir process's memory until the stream is consumed.
 
-      **Caveat**: not supported in `Porcelain.Driver.Simple`.
+        - `{:send, <pid>}` – send the output to the process denoted by `<pid>`.
+          Will send zero or more data messages and will always send one result
+          message in the end.
+
+          The data messages have the following shape:
+
+               {<from>, :data, :out | :err, <iodata>}
+
+          where `<from>` will be the same pid as the one contained in the
+          `Process` struct returned by this function.
+
+          The result message has the following shape:
+
+               {<from>, :result, %Porcelain.Result{} | nil}
+
+          The result will be `nil` if the `:result` option that is passed to
+          this function is set to `:discard`.
 
     * `:result` – specify how the result of the external program should be
     returned after it has terminated.
@@ -236,6 +253,8 @@ defmodule Porcelain do
       compiled = case opt do
         {:in, :receive}     -> :ok
         {:out, :stream}     -> :ok
+        {:out, {:send, pid}} when is_pid(pid) ->
+          :ok
         {:err, :stream}     -> :ok
         {:result, :keep}    -> :ok
         {:result, :discard} -> :ok
@@ -247,11 +266,8 @@ defmodule Porcelain do
       end
     end)
     if not Keyword.has_key?(good, :result) do
-      out = good[:out]
-      err = good[:err]
       default =
-        if match?({:string, _}, out) or match?({:iodata, _}, out)
-               or match?({:string, _}, err) or match?({:iodata, _}, err) do
+        if keep_result?(good[:out]) or keep_result?(good[:err]) do
           :keep
         else
           :discard
@@ -260,6 +276,11 @@ defmodule Porcelain do
     end
     {good, bad}
   end
+
+  defp keep_result?({:string, _}), do: true
+  defp keep_result?({:iodata, _}), do: true
+  defp keep_result?({:send, _}), do: true
+  defp keep_result?(_), do: false
 
   defp compile_input_opt(opt) do
     result = case opt do

@@ -58,9 +58,16 @@ defmodule Porcelain.Driver.Simple do
     exe = find_executable(prog, shell_flag)
 
     out_opt = opts[:out]
-    if out_opt == :stream do
-      {:ok, server} = StreamServer.start()
-      out_opt = {:stream, server}
+    out_ret = case out_opt do
+      :stream ->
+        {:ok, server} = StreamServer.start()
+        out_opt = {:stream, server}
+        Stream.unfold(server, &read_stream/1)
+
+      {atom, ""} when atom in [:string, :iodata] ->
+        atom
+
+      _ -> out_opt
     end
 
     pid = spawn(fn ->
@@ -69,11 +76,6 @@ defmodule Porcelain.Driver.Simple do
           async_input: true, result: opts[:result])
     end)
 
-    out_ret = case out_opt do
-      {:stream, server} -> Stream.unfold(server, &read_stream/1)
-      {atom, ""} when atom in [:string, :iodata] -> atom
-      _ -> out_opt
-    end
     %Porcelain.Process{
       pid: pid,
       out: out_ret,
@@ -196,10 +198,11 @@ defmodule Porcelain.Driver.Simple do
 
       { ^port, {:exit_status, status} } ->
         result = finalize_result(status, output, error)
-        case result_opt do
-          nil               -> result
-          :discard          -> nil
-          :keep             -> wait_for_command(result)
+        send_result(output, result_opt, result)
+        || case result_opt do
+          nil      -> result
+          :discard -> nil
+          :keep    -> wait_for_command(result)
         end
 
       {:input, data} ->
@@ -208,7 +211,8 @@ defmodule Porcelain.Driver.Simple do
 
       {:stop, from, ref} ->
         Port.close(port)
-        finalize_result(nil, output, error)
+        result = finalize_result(nil, output, error)
+        send_result(output, result_opt, result)
         send(from, {ref, :stopped})
     end
   end
@@ -216,6 +220,14 @@ defmodule Porcelain.Driver.Simple do
   defp finalize_result(status, out, err) do
     %Porcelain.Result{status: status, out: flatten(out), err: flatten(err)}
   end
+
+  defp send_result({:send, pid}, opt, result) do
+    if opt == :discard, do: result = nil
+    send(pid, {self(), :result, result})
+    true
+  end
+
+  defp send_result(_, _, _), do: false
 
   defp wait_for_command(result) do
     receive do
@@ -257,8 +269,13 @@ defmodule Porcelain.Driver.Simple do
     x
   end
 
-  defp process_port_output({:stream, server}=x, new_data) do
-    StreamServer.put_data(server, new_data)
+  defp process_port_output({:stream, server}=x, data) do
+    StreamServer.put_data(server, data)
+    x
+  end
+
+  defp process_port_output({:send, pid}=x, data) do
+    send(pid, {self(), :data, data})
     x
   end
 
