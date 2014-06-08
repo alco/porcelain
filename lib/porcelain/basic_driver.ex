@@ -118,7 +118,15 @@ defmodule Porcelain.Driver.Basic do
     if opts[:err] == :out, do: ret = [:stderr_to_stdout|ret]
     if dir=opts[:dir], do: ret = [{:cd, dir}|ret]
     if env=opts[:env], do: ret = [{:env, env}|ret]
-    ret
+    case {opts[:out], opts[:err], opts[:in]} do
+      {nil, nil, nil} -> [:nouse_stdio|ret]
+      {nil, nil, _}   -> [:in|ret]
+      _               -> ret
+
+      # seems :out doesn't work with :stderr_to_stdout
+      # this is left here for future reference
+      #{_, _, nil}     -> [:out|ret]
+    end
   end
 
   defp communicate(port, input, output, error, opts) do
