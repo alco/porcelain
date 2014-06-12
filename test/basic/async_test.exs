@@ -31,7 +31,7 @@ defmodule PorcelainTest.BasicAsyncTest do
 
   test "spawn and stop" do
     cmd = "grep whatever"
-    proc = Porcelain.spawn_shell(cmd, in: "whatever", result: :discard)
+    proc = Porcelain.spawn_shell(cmd, in: "whatever")
 
     :timer.sleep(100)
     assert Proc.alive?(proc)

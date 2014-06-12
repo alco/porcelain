@@ -62,6 +62,7 @@ defmodule Porcelain.Process do
   @spec alive?(t) :: true | false
 
   def alive?(%P{pid: pid}) do
+    #FIXME: does not work with pids from another node
     Process.alive?(pid)
   end
 
@@ -77,9 +78,7 @@ defmodule Porcelain.Process do
     ref = make_ref()
     send(pid, {:stop, self(), ref})
     receive do
-      {^ref, :stopped} ->
-        Process.demonitor(mon, [:flush])
-        true
+      {^ref, :stopped} -> Process.demonitor(mon, [:flush])
       {:DOWN, ^mon, _, _, _info} -> true
     end
   end
