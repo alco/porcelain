@@ -3,14 +3,9 @@ defmodule Porcelain.Mixfile do
 
   def project do
     [app: :porcelain,
-     version: "1.0.0-alpha",
+     version: "1.0.0-beta",
      elixir: "~> 0.13.3 or ~> 0.14.0",
      docs: docs]
-  end
-
-  # Configuration for the OTP application
-  def application do
-    []
   end
 
   def docs do
