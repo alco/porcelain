@@ -143,6 +143,13 @@ provided functions and supported options.
   [ref]: http://porcelain.readthedocs.org
 
 
+## Known issues and roadmap
+
+  * there are known crashes happening when using Porcelain across two nodes
+  * the support for EOF handling and OS signals is planned to be included in
+    the next stable version
+
+
 ## License
 
 This software is licensed under [the MIT license](LICENSE).
