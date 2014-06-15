@@ -51,7 +51,7 @@ defmodule PorcelainTest.BasicAsyncTest do
     pid = spawn(fn ->
       Proc.send_input(proc, "hello\n")
       Proc.send_input(proc, ":mark:\n")
-      :timer.sleep(10)
+      :timer.sleep(20)
       Proc.send_input(proc, "\n ignored \n")
       Proc.send_input(proc, ":mark:")
       Proc.send_input(proc, "\n ignored as well")
