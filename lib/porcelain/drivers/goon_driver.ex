@@ -1,28 +1,23 @@
-defmodule Porcelain.Driver.Basic do
+defmodule Porcelain.Driver.Goon do
   @moduledoc """
-  Porcelain driver that offers basic functionality for interacting with
-  external programs.
+  Porcelain driver that offers additional features over the basic one.
 
   Users are not supposed to call functions in this module directly. Use
   functions in `Porcelain` instead.
 
-  This driver has two major limitations compared to `Porcelain.Driver.Goon`:
+  This driver will be used by default if it can locate the external program
+  named `goon` in the executable path. If `goon` is not found, Porcelain will
+  fall back to the basic driver.
 
-    * the `exec` function does not work with programs that read all input until
-      EOF before producing any output. Such programs will hang since Erlang
-      ports don't provide any mechanism to indicate the end of input.
+  The additional functionality provided by this driver is as follows:
 
-      If a program is continuously consuming input and producing output, it
-      could work with the `spawn` function, but you'll also have to explicitly
-      close the connection with the external program when you're done with it.
-
-    * sending OS signals to external processes is not supported
+    * ability to signal EOF to the external program
+    * (to be implemented) send an OS signal to the program
+    * (to be implemented) more efficient piping of multiple programs
 
   """
 
   @behaviour Porcelain.Driver.Behaviour
-
-  alias Porcelain.Driver.Basic.StreamServer
 
   @doc false
   def exec(prog, args, opts) do
@@ -105,7 +100,9 @@ defmodule Porcelain.Driver.Basic do
     end
   end
 
-  defp find_executable(prog, :shell), do: {:spawn, prog}
+  defp find_executable(prog, :shell) do
+    {:spawn, "#{@goon_executable} #{prog}"}
+  end
 
 
   defp port_options(:noshell, args, opts),
@@ -291,6 +288,11 @@ defmodule Porcelain.Driver.Basic do
     x
   end
 
+  #defp process_port_output({ pid, ref }=a, in_data, type) when is_pid(pid) do
+    #Kernel.send(pid, { ref, type, in_data })
+    #a
+  #end
+
   defp flatten(thing) do
     case thing do
       {:string, data}    -> IO.iodata_to_binary(data)
@@ -300,4 +302,107 @@ defmodule Porcelain.Driver.Basic do
       other              -> other
     end
   end
+  ## Runs in a recursive loop until the process exits
+  #defp collect_output(port, output, error) do
+    ##IO.puts "Collecting output"
+    #receive do
+      #{ ^port, {:data, <<?o, data :: binary>>} } ->
+        ##IO.puts "Did receive out"
+        #output = process_port_output(output, data, :stdout)
+        #collect_output(port, output, error)
+
+      #{ ^port, {:data, <<?e, data :: binary>>} } ->
+        ##IO.puts "Did receive err"
+        #error = process_port_output(error, data, :stderr)
+        #collect_output(port, output, error)
+
+      #{ ^port, {:exit_status, status} } ->
+        #{ status, flatten(output), flatten(error) }
+
+      ##{ ^port, :eof } ->
+        ##collect_output(port, output, out_data, err_data, true, did_see_exit, status)
+    #end
+  #end
+
+
+  #defp do_loop(port, proc=%Process{in: in_opt}, parent) do
+    #Port.connect port, self
+    #if in_opt != :pid do
+      #send_input(port, in_opt)
+    #end
+    #exchange_data(port, proc, parent)
+  #end
+
+  #defp exchange_data(port, proc=%Process{in: input, out: output, err: error}, parent) do
+    #receive do
+      #{ ^port, {:data, <<?o, data :: binary>>} } ->
+        ##IO.puts "Did receive out"
+        #output = process_port_output(output, data, :stdout)
+        #exchange_data(port, %{proc|out: output}, parent)
+
+      #{ ^port, {:data, <<?e, data :: binary>>} } ->
+        ##IO.puts "Did receive err"
+        #error = process_port_output(error, data, :stderr)
+        #exchange_data(port, %{proc|err: error}, parent)
+
+      #{ ^port, {:exit_status, status} } ->
+        #Kernel.send(parent, {self, %Process{status: status,
+                                            #in: input,
+                                            #out: flatten(output),
+                                            #err: flatten(error)}})
+
+      #{ :data, :eof } ->
+        #Port.command(port, "")
+        #exchange_data(port, proc, parent)
+
+      #{ :data, data } when is_binary(data) ->
+        #Port.command(port, data)
+        #exchange_data(port, proc, parent)
+    #end
+  #end
+
+  #defp port_options(options, cmd, args) do
+    #flags = get_flags(options)
+    ##[{:args, List.flatten([["run", "main.go"], flags, ["--"], [cmd | args]])},
+    #all_args = List.flatten([flags, ["--"], [cmd | args]])
+    #[{:args, all_args}, :binary, {:packet, 2}, :exit_status, :use_stdio, :hide]
+  #end
+
+  #defp get_flags(options) do
+    #[
+      #["-proto", "2l"],
+
+      #case options[:out] do
+        #nil  -> ["-out", ""]
+        #:err -> ["-out", "err"]
+        #_    -> []
+      #end,
+
+      #case options[:err] do
+        #nil  -> ["-err", ""]
+        #:out -> ["-err", "out"]
+        #_    -> []
+      #end
+    #]
+  #end
+
+  #defp open_port(opts) do
+    #goon = if File.exists?("goon") do
+      #'goon'
+    #else
+      #:os.find_executable 'goon'
+    #end
+    #Port.open { :spawn_executable, goon }, opts
+  #end
+
+  ## Processes port options opens a port. Used in both call() and spawn()
+  #defp init_port_connection(cmd, args, options) do
+    #port = open_port(port_options(options, cmd, args))
+
+    #input  = process_input_opts(options[:in])
+    #output = process_output_opts(options[:out])
+    #error  = process_error_opts(options[:err])
+
+    #{ port, input, output, error }
+  #end
 end
