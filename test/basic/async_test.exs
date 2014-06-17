@@ -4,6 +4,10 @@ defmodule PorcelainTest.BasicAsyncTest do
   alias Porcelain.Process, as: Proc
   alias Porcelain.Result
 
+  setup_all do
+    :application.set_env(:porcelain, :driver, Porcelain.Driver.Basic)
+  end
+
   test "spawn keep result" do
     cmd = "head -n 3 | cut -b 1-4"
     proc = Porcelain.spawn_shell(cmd,

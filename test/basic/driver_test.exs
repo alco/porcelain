@@ -6,6 +6,10 @@ defmodule PorcelainTest.BasicTest do
 
   alias Porcelain.Result
 
+  setup_all do
+    :application.set_env(:porcelain, :driver, Porcelain.Driver.Basic)
+  end
+
   test "status" do
     assert exec("date", [], out: nil)
            == %Result{out: nil, err: nil, status: 0}

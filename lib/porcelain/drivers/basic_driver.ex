@@ -20,9 +20,11 @@ defmodule Porcelain.Driver.Basic do
 
   """
 
-  @behaviour Porcelain.Driver.Behaviour
+  @behaviour Porcelain.Driver.Common
 
+  alias Porcelain.Driver.Common
   alias Porcelain.Driver.Basic.StreamServer
+
 
   @doc false
   def exec(prog, args, opts) do
@@ -48,7 +50,7 @@ defmodule Porcelain.Driver.Basic do
   ###
 
   defp do_exec(prog, args, opts, shell_flag) do
-    opts = compile_options(opts)
+    opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
     port = Port.open(exe, port_options(shell_flag, args, opts))
     communicate(port, opts[:in], opts[:out], opts[:err],
@@ -56,7 +58,7 @@ defmodule Porcelain.Driver.Basic do
   end
 
   defp do_spawn(prog, args, opts, shell_flag) do
-    opts = compile_options(opts)
+    opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
 
     out_opt = opts[:out]
@@ -86,16 +88,6 @@ defmodule Porcelain.Driver.Basic do
   end
 
 
-  defp compile_options({opts, []}) do
-    opts
-  end
-
-  defp compile_options({_opts, extra_opts}) do
-    msg = "Invalid options: #{inspect extra_opts}"
-    raise Porcelain.UsageError, message: msg
-  end
-
-
   @doc false
   defp find_executable(prog, :noshell) do
     if exe=:os.find_executable(:erlang.binary_to_list(prog)) do
@@ -114,24 +106,12 @@ defmodule Porcelain.Driver.Basic do
   defp port_options(:shell, _, opts),
     do: common_port_options(opts)
 
-
-  @common_port_options [:binary, :stream, :exit_status, :use_stdio, :hide]
-
   defp common_port_options(opts) do
-    ret = @common_port_options
+    ret = Common.port_options(opts)
     if opts[:err] == :out, do: ret = [:stderr_to_stdout|ret]
-    if dir=opts[:dir], do: ret = [{:cd, dir}|ret]
-    if env=opts[:env], do: ret = [{:env, env}|ret]
-    case {opts[:out], opts[:err], opts[:in]} do
-      {nil, nil, nil} -> [:nouse_stdio|ret]
-      {nil, nil, _}   -> [:in|ret]
-      _               -> ret
-
-      # seems :out doesn't work with :stderr_to_stdout
-      # this is left here for future reference
-      #{_, _, nil}     -> [:out|ret]
-    end
+    ret
   end
+
 
   defp communicate(port, input, output, error, opts) do
     input_fun = fn -> send_input(port, input) end

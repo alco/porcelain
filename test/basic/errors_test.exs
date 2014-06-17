@@ -4,6 +4,10 @@ defmodule PorcelainTest.ErrorsTest do
   import Porcelain, only: [shell: 2, exec: 2]
   alias Porcelain.Result
 
+  setup_all do
+    :application.set_env(:porcelain, :driver, Porcelain.Driver.Basic)
+  end
+
   test "bad option" do
     msg = "Invalid options: [option: \"value\"]"
     assert_raise Porcelain.UsageError, msg, fn ->

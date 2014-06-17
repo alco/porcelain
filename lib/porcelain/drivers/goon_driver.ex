@@ -17,7 +17,10 @@ defmodule Porcelain.Driver.Goon do
 
   """
 
-  @behaviour Porcelain.Driver.Behaviour
+  @behaviour Porcelain.Driver.Common
+
+  alias Porcelain.Driver.Common
+
 
   @doc false
   def exec(prog, args, opts) do
@@ -43,15 +46,15 @@ defmodule Porcelain.Driver.Goon do
   ###
 
   defp do_exec(prog, args, opts, shell_flag) do
-    opts = compile_options(opts)
+    opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
-    port = Port.open(exe, port_options(shell_flag, args, opts))
+    port = Port.open(exe, port_options(shell_flag, prog, args, opts))
     communicate(port, opts[:in], opts[:out], opts[:err],
         async_input: opts[:async_in])
   end
 
   defp do_spawn(prog, args, opts, shell_flag) do
-    opts = compile_options(opts)
+    opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
 
     out_opt = opts[:out]
@@ -68,7 +71,7 @@ defmodule Porcelain.Driver.Goon do
     end
 
     pid = spawn(fn ->
-      port = Port.open(exe, port_options(shell_flag, args, opts))
+      port = Port.open(exe, port_options(shell_flag, prog, args, opts))
       communicate(port, opts[:in], out_opt, opts[:err],
           async_input: true, result: opts[:result])
     end)
@@ -81,52 +84,38 @@ defmodule Porcelain.Driver.Goon do
   end
 
 
-  defp compile_options({opts, []}) do
-    opts
-  end
-
-  defp compile_options({_opts, extra_opts}) do
-    msg = "Invalid options: #{inspect extra_opts}"
-    raise Porcelain.UsageError, message: msg
-  end
-
+  @goon_executable 'goon'
+  @proto_version "0.0"
 
   @doc false
   defp find_executable(prog, :noshell) do
-    if exe=:os.find_executable(:erlang.binary_to_list(prog)) do
-      {:spawn_executable, exe}
+    if :os.find_executable(:erlang.binary_to_list(prog)) do
+      {:spawn_executable, @goon_executable}
     else
       throw "Command not found: #{prog}"
     end
   end
 
   defp find_executable(prog, :shell) do
-    {:spawn, "#{@goon_executable} #{prog}"}
+    {:spawn, "#{@goon_executable} -proto #{@proto_version} -- #{prog}"}
   end
 
 
-  defp port_options(:noshell, args, opts),
-    do: [{:args, args} | common_port_options(opts)]
+  defp port_options(:noshell, prog, args, opts) do
+    args = ["-proto", @proto_version, "--", prog] ++ args
+    [{:args, args} | common_port_options(opts)]
+  end
 
-  defp port_options(:shell, _, opts),
-    do: common_port_options(opts)
-
-
-  @common_port_options [:binary, :stream, :exit_status, :use_stdio, :hide]
+  defp port_options(:shell, _, _, opts) do
+    common_port_options(opts)
+  end
 
   defp common_port_options(opts) do
-    ret = @common_port_options
-    if opts[:err] == :out, do: ret = [:stderr_to_stdout|ret]
-    if dir=opts[:dir], do: ret = [{:cd, dir}|ret]
-    if env=opts[:env], do: ret = [{:env, env}|ret]
+    ret = Common.port_options(opts)
     case {opts[:out], opts[:err], opts[:in]} do
-      {nil, nil, nil} -> [:nouse_stdio|ret]
-      {nil, nil, _}   -> [:in|ret]
+      {nil, nil, nil} -> ret
+      {_, _, nil}     -> [:out|ret]
       _               -> ret
-
-      # seems :out doesn't work with :stderr_to_stdout
-      # this is left here for future reference
-      #{_, _, nil}     -> [:out|ret]
     end
   end
 
