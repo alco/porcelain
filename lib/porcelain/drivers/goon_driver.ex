@@ -47,7 +47,7 @@ defmodule Porcelain.Driver.Goon do
 
   defp do_exec(prog, args, opts, shell_flag) do
     opts = Common.compile_options(opts)
-    exe = find_executable(prog, shell_flag)
+    exe = find_executable(prog, opts, shell_flag)
     port = Port.open(exe, port_options(shell_flag, prog, args, opts))
     communicate(port, opts[:in], opts[:out], opts[:err],
         async_input: opts[:async_in])
@@ -55,7 +55,7 @@ defmodule Porcelain.Driver.Goon do
 
   defp do_spawn(prog, args, opts, shell_flag) do
     opts = Common.compile_options(opts)
-    exe = find_executable(prog, shell_flag)
+    exe = find_executable(prog, opts, shell_flag)
 
     out_opt = opts[:out]
     out_ret = case out_opt do
@@ -84,20 +84,24 @@ defmodule Porcelain.Driver.Goon do
   end
 
 
-  @goon_executable 'goon'
   @proto_version "0.0"
 
   @doc false
-  defp find_executable(prog, :noshell) do
+  defp find_executable(prog, _, :noshell) do
     if :os.find_executable(:erlang.binary_to_list(prog)) do
-      {:spawn_executable, @goon_executable}
+      {:spawn_executable, Common.find_goon(:noshell)}
     else
       throw "Command not found: #{prog}"
     end
   end
 
-  defp find_executable(prog, :shell) do
-    {:spawn, "#{@goon_executable} -proto #{@proto_version} -- #{prog}"}
+  defp find_executable(prog, opts, :shell) do
+    invocation =
+      [Common.find_goon(:shell), goon_options(opts), "--", prog]
+      |> List.flatten
+      |> Enum.join(" ")
+      #|> IO.inspect
+    {:spawn, invocation}
   end
 
 

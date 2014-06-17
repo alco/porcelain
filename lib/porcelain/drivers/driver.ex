@@ -9,6 +9,25 @@ defmodule Porcelain.Driver.Common do
   defcallback spawn_shell(prog :: binary, opts :: Keyword.t)
 
 
+  def find_goon(shell_flag \\ :noshell)
+
+  def find_goon(:noshell) do
+    if File.exists?("goon") do
+      'goon'
+    else
+      :os.find_executable('goon')
+    end
+  end
+
+  def find_goon(:shell) do
+    if File.exists?("goon") do
+      "./goon"
+    else
+      :os.find_executable('goon')
+    end
+  end
+
+
   def compile_options({opts, []}) do
     opts
   end

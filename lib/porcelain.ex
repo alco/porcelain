@@ -389,9 +389,8 @@ defmodule Porcelain do
     end
   end
 
-  @goon_executable 'goon'
   defp find_goon() do
-    if :os.find_executable(@goon_executable) do
+    if Porcelain.Driver.Common.find_goon() do
       Porcelain.Driver.Goon
     end
   end
