@@ -24,10 +24,10 @@ User-level features include:
   * multiple ways of passing input to the program and getting back its output
     (including working directly with files and Elixir streams)
 
-  * (_to be implemented_) ability to send OS signals to external processes
+  * being able to work with programs that try to read the whole input until EOF
+    before producing output
 
-  * (_to be implemented_) being able to work with programs that try to read the
-    whole input until EOF before producing output
+  * (_to be implemented_) ability to send OS signals to external processes
 
 To find out more about the background on the library's design and possible
 future extensions, please refer to the [wiki][].
@@ -146,8 +146,9 @@ provided functions and supported options.
 ## Known issues and roadmap
 
   * there are known crashes happening when using Porcelain across two nodes
-  * the support for EOF handling and OS signals is planned to be included in
-    the next stable version
+  * the middleman can sometimes hang in a spin-loop
+  * the support for OS signals is planned to be included in the next minor
+    release
 
 
 ## License
