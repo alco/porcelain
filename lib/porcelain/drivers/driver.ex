@@ -37,19 +37,13 @@ defmodule Porcelain.Driver.Common do
     raise Porcelain.UsageError, message: msg
   end
 
-  @common_options [:binary, :stream, :exit_status, :use_stdio, :hide]
+  @common_options [:binary, :use_stdio, :exit_status, :hide]
   def port_options(opts) do
     ret = @common_options
-    if dir=opts[:dir], do: ret = [{:cd, dir}|ret]
-    if env=opts[:env], do: ret = [{:env, env}|ret]
-    case {opts[:out], opts[:err], opts[:in]} do
-      {nil, nil, nil} -> [:nouse_stdio|ret]
-      {nil, nil, _}   -> [:in|ret]
-      _               -> ret
-
-      # seems :out doesn't work with :stderr_to_stdout
-      # it is only used in the Goon driver
-      #{_, _, nil}     -> [:out|ret]
-    end
+    if env=opts[:env],
+      do: ret = [{:env, env}|ret]
+    if opts[:in] && !(opts[:out] || opts[:err]),
+      do: ret = [:in|ret]
+    ret
   end
 end

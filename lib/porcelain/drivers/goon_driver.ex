@@ -106,21 +106,36 @@ defmodule Porcelain.Driver.Goon do
 
 
   defp port_options(:noshell, prog, args, opts) do
-    args = ["-proto", @proto_version, "--", prog] ++ args
-    [{:args, args} | common_port_options(opts)]
+    #IO.puts "Choosing port options for :noshell, #{prog} with args #{inspect args} and opts #{inspect opts}"
+    args = List.flatten([goon_options(opts), "--", prog, args])
+    [{:args, args} | common_port_options(opts)] #|> IO.inspect
   end
 
   defp port_options(:shell, _, _, opts) do
-    common_port_options(opts)
+    common_port_options(opts) #|> IO.inspect
+  end
+
+  defp goon_options(opts) do
+    ret = []
+    case opts[:out] do
+      nil -> ret = ["-out", "nil"|ret]
+      _ -> nil
+    end
+    case opts[:err] do
+      nil ->
+        ret = ["-err", "nil"|ret]
+      :out ->
+        flag = if opts[:out], do: "out", else: "nil"
+        ret = ["-err", flag|ret]
+      _ -> nil
+    end
+    if dir=opts[:dir],
+      do: ret = ["-dir", dir|ret]
+    ["-proto", @proto_version|ret]
   end
 
   defp common_port_options(opts) do
-    ret = Common.port_options(opts)
-    case {opts[:out], opts[:err], opts[:in]} do
-      {nil, nil, nil} -> ret
-      {_, _, nil}     -> [:out|ret]
-      _               -> ret
-    end
+    [{:packet,2}|Common.port_options(opts)]
   end
 
   defp communicate(port, input, output, error, opts) do
@@ -194,8 +209,12 @@ defmodule Porcelain.Driver.Goon do
 
   defp collect_output(port, output, error, result_opt) do
     receive do
-      { ^port, {:data, data} } ->
+      { ^port, {:data, <<?o>> <> data} } ->
         output = process_port_output(output, data)
+        collect_output(port, output, error, result_opt)
+
+      { ^port, {:data, <<?e>> <> data} } ->
+        error = process_port_output(error, data)
         collect_output(port, output, error, result_opt)
 
       { ^port, {:exit_status, status} } ->

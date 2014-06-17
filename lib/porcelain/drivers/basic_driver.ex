@@ -107,8 +107,11 @@ defmodule Porcelain.Driver.Basic do
     do: common_port_options(opts)
 
   defp common_port_options(opts) do
-    ret = Common.port_options(opts)
-    if opts[:err] == :out, do: ret = [:stderr_to_stdout|ret]
+    ret = [:stream|Common.port_options(opts)]
+    if dir=opts[:dir],
+      do: ret = [{:cd, dir}|ret]
+    if opts[:err] == :out,
+      do: ret = [:stderr_to_stdout|ret]
     ret
   end
 
