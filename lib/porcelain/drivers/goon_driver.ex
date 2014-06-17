@@ -349,49 +349,4 @@ defmodule Porcelain.Driver.Goon do
         #exchange_data(port, proc, parent)
     #end
   #end
-
-  #defp port_options(options, cmd, args) do
-    #flags = get_flags(options)
-    ##[{:args, List.flatten([["run", "main.go"], flags, ["--"], [cmd | args]])},
-    #all_args = List.flatten([flags, ["--"], [cmd | args]])
-    #[{:args, all_args}, :binary, {:packet, 2}, :exit_status, :use_stdio, :hide]
-  #end
-
-  #defp get_flags(options) do
-    #[
-      #["-proto", "2l"],
-
-      #case options[:out] do
-        #nil  -> ["-out", ""]
-        #:err -> ["-out", "err"]
-        #_    -> []
-      #end,
-
-      #case options[:err] do
-        #nil  -> ["-err", ""]
-        #:out -> ["-err", "out"]
-        #_    -> []
-      #end
-    #]
-  #end
-
-  #defp open_port(opts) do
-    #goon = if File.exists?("goon") do
-      #'goon'
-    #else
-      #:os.find_executable 'goon'
-    #end
-    #Port.open { :spawn_executable, goon }, opts
-  #end
-
-  ## Processes port options opens a port. Used in both call() and spawn()
-  #defp init_port_connection(cmd, args, options) do
-    #port = open_port(port_options(options, cmd, args))
-
-    #input  = process_input_opts(options[:in])
-    #output = process_output_opts(options[:out])
-    #error  = process_error_opts(options[:err])
-
-    #{ port, input, output, error }
-  #end
 end
