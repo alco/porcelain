@@ -20,10 +20,9 @@ defmodule Porcelain.Driver.Basic do
 
   """
 
-  @behaviour Porcelain.Driver.Common
-
   alias Porcelain.Driver.Common
-  alias Porcelain.Driver.Basic.StreamServer
+  alias Common.StreamServer
+  @behaviour Common
 
 
   @doc false

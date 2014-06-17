@@ -17,9 +17,9 @@ defmodule Porcelain.Driver.Goon do
 
   """
 
-  @behaviour Porcelain.Driver.Common
-
   alias Porcelain.Driver.Common
+  alias Common.StreamServer
+  @behaviour Common
 
 
   @doc false
