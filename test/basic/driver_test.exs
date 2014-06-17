@@ -13,9 +13,6 @@ defmodule PorcelainTest.BasicTest do
   test "status" do
     assert exec("date", [], out: nil)
            == %Result{out: nil, err: nil, status: 0}
-
-    assert exec("date", ["rubbish"], out: nil)
-           == %Result{out: nil, err: nil, status: 1}
   end
 
   test "stdout" do
