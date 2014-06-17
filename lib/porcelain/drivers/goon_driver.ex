@@ -302,11 +302,6 @@ defmodule Porcelain.Driver.Goon do
     x
   end
 
-  #defp process_port_output({ pid, ref }=a, in_data, type) when is_pid(pid) do
-    #Kernel.send(pid, { ref, type, in_data })
-    #a
-  #end
-
   defp flatten(thing) do
     case thing do
       {:string, data}    -> IO.iodata_to_binary(data)
@@ -316,62 +311,4 @@ defmodule Porcelain.Driver.Goon do
       other              -> other
     end
   end
-  ## Runs in a recursive loop until the process exits
-  #defp collect_output(port, output, error) do
-    ##IO.puts "Collecting output"
-    #receive do
-      #{ ^port, {:data, <<?o, data :: binary>>} } ->
-        ##IO.puts "Did receive out"
-        #output = process_port_output(output, data, :stdout)
-        #collect_output(port, output, error)
-
-      #{ ^port, {:data, <<?e, data :: binary>>} } ->
-        ##IO.puts "Did receive err"
-        #error = process_port_output(error, data, :stderr)
-        #collect_output(port, output, error)
-
-      #{ ^port, {:exit_status, status} } ->
-        #{ status, flatten(output), flatten(error) }
-
-      ##{ ^port, :eof } ->
-        ##collect_output(port, output, out_data, err_data, true, did_see_exit, status)
-    #end
-  #end
-
-
-  #defp do_loop(port, proc=%Process{in: in_opt}, parent) do
-    #Port.connect port, self
-    #if in_opt != :pid do
-      #send_input(port, in_opt)
-    #end
-    #exchange_data(port, proc, parent)
-  #end
-
-  #defp exchange_data(port, proc=%Process{in: input, out: output, err: error}, parent) do
-    #receive do
-      #{ ^port, {:data, <<?o, data :: binary>>} } ->
-        ##IO.puts "Did receive out"
-        #output = process_port_output(output, data, :stdout)
-        #exchange_data(port, %{proc|out: output}, parent)
-
-      #{ ^port, {:data, <<?e, data :: binary>>} } ->
-        ##IO.puts "Did receive err"
-        #error = process_port_output(error, data, :stderr)
-        #exchange_data(port, %{proc|err: error}, parent)
-
-      #{ ^port, {:exit_status, status} } ->
-        #Kernel.send(parent, {self, %Process{status: status,
-                                            #in: input,
-                                            #out: flatten(output),
-                                            #err: flatten(error)}})
-
-      #{ :data, :eof } ->
-        #Port.command(port, "")
-        #exchange_data(port, proc, parent)
-
-      #{ :data, data } when is_binary(data) ->
-        #Port.command(port, data)
-        #exchange_data(port, proc, parent)
-    #end
-  #end
 end
