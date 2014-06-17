@@ -117,10 +117,10 @@ defmodule Porcelain.Driver.Goon do
 
   defp goon_options(opts) do
     ret = []
-    case opts[:out] do
-      nil -> ret = ["-out", "nil"|ret]
-      _ -> nil
-    end
+    if opts[:in] != nil,
+      do: ret = ["-in"|ret]
+    if opts[:out] == nil,
+      do: ret = ["-out", "nil"|ret]
     case opts[:err] do
       nil ->
         ret = ["-err", "nil"|ret]
@@ -152,6 +152,7 @@ defmodule Porcelain.Driver.Goon do
     case input do
       iodata when is_binary(iodata) or is_list(iodata) ->
         Port.command(port, input)
+        send_eof(port)
 
       {:file, fid} ->
         pipe_file(fid, port)
@@ -166,9 +167,9 @@ defmodule Porcelain.Driver.Goon do
 
       other -> stream_to_port(other, port)
     end
-    ## Send EOF to indicate the end of input or no input
-    #Port.command(port, "")
   end
+
+  defp send_eof(port), do: Port.command(port, "")
 
   defp read_stream(server) do
     case StreamServer.get_data(server) do
@@ -205,6 +206,7 @@ defmodule Porcelain.Driver.Goon do
     catch
       :error, :badarg -> nil
     end
+    send_eof(port)
   end
 
   defp collect_output(port, output, error, result_opt) do
