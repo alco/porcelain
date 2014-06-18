@@ -7,7 +7,7 @@ defmodule PorcelainTest.GoonTest do
   alias Porcelain.Result
 
   setup_all do
-    :application.set_env(:porcelain, :driver, Porcelain.Driver.Goon)
+    Porcelain.reinit(Porcelain.Driver.Goon)
   end
 
   test "status" do

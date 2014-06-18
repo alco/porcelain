@@ -5,7 +5,7 @@ defmodule PorcelainTest.GoonAsyncTest do
   alias Porcelain.Result
 
   setup_all do
-    :application.set_env(:porcelain, :driver, Porcelain.Driver.Goon)
+    Porcelain.reinit(Porcelain.Driver.Goon)
   end
 
   test "spawn keep result" do

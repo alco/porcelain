@@ -5,7 +5,7 @@ defmodule PorcelainTest.ErrorsTest do
   alias Porcelain.Result
 
   setup_all do
-    :application.set_env(:porcelain, :driver, Porcelain.Driver.Basic)
+    Porcelain.reinit(Porcelain.Driver.Basic)
   end
 
   test "bad option" do

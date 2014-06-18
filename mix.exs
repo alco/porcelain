@@ -8,6 +8,10 @@ defmodule Porcelain.Mixfile do
      docs: docs]
   end
 
+  def application do
+    [mod: {Porcelain.App, []}]
+  end
+
   def docs do
     [
       formatter: "sphinx",

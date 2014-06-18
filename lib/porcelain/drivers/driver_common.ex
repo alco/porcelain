@@ -11,23 +11,6 @@ defmodule Porcelain.Driver.Common do
 
   alias Porcelain.Driver.Common.StreamServer
 
-  def find_goon(shell_flag \\ :noshell)
-
-  def find_goon(:noshell) do
-    if File.exists?("goon") do
-      'goon'
-    else
-      :os.find_executable('goon')
-    end
-  end
-
-  def find_goon(:shell) do
-    if File.exists?("goon") do
-      "./goon"
-    else
-      :os.find_executable('goon')
-    end
-  end
 
   def find_executable(prog) do
     cond do

@@ -89,7 +89,7 @@ defmodule Porcelain.Driver.Goon do
   @doc false
   defp find_executable(prog, _, :noshell) do
     if Common.find_executable(prog) do
-      {:spawn_executable, Common.find_goon(:noshell)}
+      {:spawn_executable, goon_exe()}
     else
       throw "Command not found: #{prog}"
     end
@@ -97,11 +97,16 @@ defmodule Porcelain.Driver.Goon do
 
   defp find_executable(prog, opts, :shell) do
     invocation =
-      [Common.find_goon(:shell), goon_options(opts), "--", prog]
+      [goon_exe(), goon_options(opts), "--", prog]
       |> List.flatten
       |> Enum.join(" ")
       #|> IO.inspect
     {:spawn, invocation}
+  end
+
+  defp goon_exe() do
+    {:ok, goon} = :application.get_env(:porcelain, :driver_state)
+    goon
   end
 
 

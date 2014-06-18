@@ -235,6 +235,26 @@ defmodule Porcelain do
     end
   end
 
+
+  @doc """
+  Reruns the initialization and updates application env.
+
+  This function is useful in the following cases:
+
+    1. The currently used driver is Goon and the location of the goon
+    executable has changed.
+
+    2. You want to change the driver being used.
+
+  """
+  def reinit(driver \\ nil) do
+    if driver do
+      Porcelain.Init.init(driver)
+    else
+      Porcelain.Init.init()
+    end
+  end
+
   ###
 
   defp catch_wrapper(fun) do
@@ -381,18 +401,9 @@ defmodule Porcelain do
   defp convert_env_val(bin), do: String.to_char_list(bin)
 
 
-  # dynamic selection of the execution driver which does all the hard work
   defp driver() do
-    case :application.get_env(:porcelain, :driver) do
-      :undefined   -> find_goon() || Porcelain.Driver.Basic
-      {:ok, other} -> other
-    end
-  end
-
-  defp find_goon() do
-    if Porcelain.Driver.Common.find_goon() do
-      Porcelain.Driver.Goon
-    end
+    {:ok, mod} = :application.get_env(:porcelain, :driver_internal)
+    mod
   end
 
 
