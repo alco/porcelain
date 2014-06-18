@@ -130,6 +130,10 @@ defmodule Porcelain.Driver.Goon do
       _ -> ret = ["-err", "err"|ret]
     end
     if dir=opts[:dir], do: ret = ["-dir", dir|ret]
+    case :application.get_env(:porcelain, :driver_goon_log) do
+      :undefined -> nil
+      {:ok, val} -> ret = ["-log", val|ret]
+    end
     ["-proto", @proto_version|ret]
   end
 
