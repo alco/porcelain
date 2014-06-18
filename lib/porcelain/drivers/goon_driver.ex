@@ -117,20 +117,14 @@ defmodule Porcelain.Driver.Goon do
 
   defp goon_options(opts) do
     ret = []
-    if opts[:in] != nil,
-      do: ret = ["-in"|ret]
-    if opts[:out] == nil,
-      do: ret = ["-out", "nil"|ret]
+    if opts[:in], do: ret = ["-in"|ret]
+    if opts[:out], do: ret = ["-out"|ret]
     case opts[:err] do
-      nil ->
-        ret = ["-err", "nil"|ret]
-      :out ->
-        flag = if opts[:out], do: "out", else: "nil"
-        ret = ["-err", flag|ret]
-      _ -> nil
+      :out -> ret = ["-err", "out"|ret]
+      nil -> nil
+      _ -> ret = ["-err", "err"|ret]
     end
-    if dir=opts[:dir],
-      do: ret = ["-dir", dir|ret]
+    if dir=opts[:dir], do: ret = ["-dir", dir|ret]
     ["-proto", @proto_version|ret]
   end
 
