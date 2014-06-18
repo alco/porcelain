@@ -29,6 +29,16 @@ defmodule Porcelain.Driver.Common do
     end
   end
 
+  def find_executable(prog) do
+    cond do
+      File.exists?(prog) ->
+        Path.absname(prog)
+      exe=:os.find_executable(:erlang.binary_to_list(prog)) ->
+        List.to_string(exe)
+      true -> false
+    end
+  end
+
 
   def compile_options({opts, []}) do
     opts

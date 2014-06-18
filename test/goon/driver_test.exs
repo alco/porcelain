@@ -41,6 +41,13 @@ defmodule PorcelainTest.GoonTest do
     assert result.out =~ ~r/illegal time format/
   end
 
+  @tag :localbin
+  test "local binary" do
+    result = exec("goon", [], err: :out)
+    assert %Result{out: <<_::binary>>, err: :out, status: 255} = result
+    assert result.out =~ ~r/Please specify the protocol version/
+  end
+
   test "dir" do
     assert exec("sort", ["input.txt"], dir: fixture_path(""))
            == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}

@@ -89,7 +89,7 @@ defmodule Porcelain.Driver.Basic do
 
   @doc false
   defp find_executable(prog, :noshell) do
-    if exe=:os.find_executable(:erlang.binary_to_list(prog)) do
+    if exe=Common.find_executable(prog) do
       {:spawn_executable, exe}
     else
       throw "Command not found: #{prog}"

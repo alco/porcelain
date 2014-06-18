@@ -1,4 +1,4 @@
-ExUnit.start
+ExUnit.start exclude: :localbin
 
 defmodule TestUtil do
   def fixture_path(name) do

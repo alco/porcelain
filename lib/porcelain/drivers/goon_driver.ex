@@ -88,7 +88,7 @@ defmodule Porcelain.Driver.Goon do
 
   @doc false
   defp find_executable(prog, _, :noshell) do
-    if :os.find_executable(:erlang.binary_to_list(prog)) do
+    if Common.find_executable(prog) do
       {:spawn_executable, Common.find_goon(:noshell)}
     else
       throw "Command not found: #{prog}"
@@ -107,7 +107,7 @@ defmodule Porcelain.Driver.Goon do
 
   defp port_options(:noshell, prog, args, opts) do
     #IO.puts "Choosing port options for :noshell, #{prog} with args #{inspect args} and opts #{inspect opts}"
-    args = List.flatten([goon_options(opts), "--", prog, args])
+    args = List.flatten([goon_options(opts), "--", Common.find_executable(prog), args])
     [{:args, args} | common_port_options(opts)] #|> IO.inspect
   end
 
