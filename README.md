@@ -146,10 +146,14 @@ provided functions and supported options.
 ## Known issues and roadmap
 
   * there are known crashes happening when using Porcelain across two nodes
-  * the middleman can sometimes hang in a spin-loop
-  * the support for OS signals is planned to be included in the next minor
+  * error handling when using the Goon driver is not completely shaped out
+  * the support for OS signals is planned to be included in a later release
     release
 
+## TODO
+
+  * implement handshake in the Goon driver
+  * think about the best way to handle launch errors originating in the middleman
 
 ## License
 
