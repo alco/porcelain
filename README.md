@@ -152,6 +152,7 @@ provided functions and supported options.
 
 ## TODO
 
+  * shell() support in Goon
   * implement handshake in the Goon driver
   * think about the best way to handle launch errors originating in the middleman
 

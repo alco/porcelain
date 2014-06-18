@@ -53,13 +53,13 @@ defmodule PorcelainTest.GoonTest do
            == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}
   end
 
-  test "env" do
-    cmd = "echo $custom_var"
-    assert shell(cmd, env: [custom_var: "hello"])
-           == %Result{out: "hello\n", err: nil, status: 0}
-    assert shell(cmd, env: %{"custom_var" => "bye"})
-           == %Result{out: "bye\n", err: nil, status: 0}
-  end
+  #test "env" do
+    #cmd = "echo $custom_var"
+    #assert shell(cmd, env: [custom_var: "hello"])
+           #== %Result{out: "hello\n", err: nil, status: 0}
+    #assert shell(cmd, env: %{"custom_var" => "bye"})
+           #== %Result{out: "bye\n", err: nil, status: 0}
+  #end
 
   #test "shell" do
     #cmd = "head -n 4 | tr a-i A-I | sort"
