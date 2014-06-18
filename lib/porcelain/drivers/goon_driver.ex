@@ -134,11 +134,11 @@ defmodule Porcelain.Driver.Goon do
 
   ###
 
-  defp process_data(<<?o>> <> data, output, error) do
+  defp process_data(<<0x0>> <> data, output, error) do
     {Common.process_port_output(output, data), error}
   end
 
-  defp process_data(<<?e>> <> data, output, error) do
+  defp process_data(<<0x1>> <> data, output, error) do
     {output, Common.process_port_output(error, data)}
   end
 end
