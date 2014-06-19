@@ -152,6 +152,11 @@ provided functions and supported options.
 
 ## TODO
 
+  * Update readme with:
+    - installation guide
+    - more granular examples
+    - Goon guide
+
   * implement handshake in the Goon driver
   * think about the best way to handle launch errors originating in the middleman
 
