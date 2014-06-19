@@ -12,9 +12,21 @@ defmodule Porcelain.Init do
 
   def init(nil) do
     if path=find_goon() do
-      set_driver(Goon, path)
+      if Goon.check_goon_version(path) do
+        set_driver(Goon, path)
+      else
+        msg = "[Porcelain]: goon executable at #{path} does not support "
+          <> "protocol version #{Goon.proto_version}\n"
+          <> "[Porcelain]: falling back to the basic driver\n"
+        IO.write :stderr, msg
+        set_driver(Basic)
+      end
     else
-      IO.puts :stderr, "[Porcelain]: goon executable not found. Falling back to the basic driver"
+      msg = """
+      [Porcelain]: goon executable not found
+      [Porcelain]: falling back to the basic driver
+      """
+      IO.puts :stderr, msg
       set_driver(Basic)
     end
   end

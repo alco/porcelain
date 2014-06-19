@@ -197,7 +197,7 @@ one, it will use `Porcelain.Driver.Goon`. Otherwise, it will print a warning to
 stderr and fall back to `Porcelain.Driver.Basic`.
 
 By setting `Porcelain.Driver.Basic` above you can force Porcelain to always
-use the Basic driver.
+use the basic driver.
 
 If you set `Porcelain.Driver.Goon`, Porcelain will always use the Goon driver
 and will fail to start if the `goon` executable can't be found.
