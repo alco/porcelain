@@ -6,9 +6,21 @@ defmodule Porcelain.Init do
 
   def init() do
     driver = get_env(:driver)
-    init(driver)
-    init_shell()
+    ok_pipe([
+      fn -> init(driver) end,
+      fn -> init_shell() end,
+      fn -> :ok end,
+    ])
   end
+
+  defp ok_pipe([h|t]) do
+    case h.() do
+      {:error, _}=error -> error
+      :ok -> ok_pipe(t)
+    end
+  end
+
+  defp ok_pipe([]), do: :ok
 
   def init(nil) do
     if path=find_goon() do
