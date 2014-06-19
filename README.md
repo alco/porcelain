@@ -57,7 +57,8 @@ install it.
 ## Usage
 
 Examples below show some of the common use cases. Refer to the [API docs][ref]
-to familiarize yourself the complete set of provided functions and options.
+to familiarize yourself with the complete set of provided functions and
+options.
 
 
 ### Launching one-off programs
@@ -174,6 +175,42 @@ receive do
   {^pid, :result, %Result{status: status}} -> IO.inspect status   #=> 0
 end
 ```
+
+
+## Configuring the Goon driver
+
+There are a number of options you can tweak to customize the way `goon` is
+used. All of the options described below should put into your `config.exs`
+file.
+
+
+### Setting the driver
+
+```elixir
+config :porcelain, :driver, <driver>
+```
+
+This option allows you to set a particular driver to be used at all times.
+
+By default, Porcelain will try to detect the `goon` executable. If it can find
+one, it will use `Porcelain.Driver.Goon`. Otherwise, it will print a warning to
+stderr and fall back to `Porcelain.Driver.Basic`.
+
+By setting `Porcelain.Driver.Basic` above you can force Porcelain to always
+use the Basic driver.
+
+If you set `Porcelain.Driver.Goon`, Porcelain will always use the Goon driver
+and will fail to start if the `goon` executable can't be found.
+
+
+### Goon options
+
+```elixir
+config :porcelain, :goon_driver_path, <path>
+```
+
+Set an absolute path to the `goon` executable. If this is not set, Porcelain
+will search your system's `PATH` by default.
 
 
 ## Going deeper
