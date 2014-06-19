@@ -29,16 +29,35 @@ User-level features include:
 
   * (_to be implemented_) ability to send OS signals to external processes
 
-To find out more about the background on the library's design and possible
-future extensions, please refer to the [wiki][].
+To read background story on the library's design and possible future
+extensions, please refer to the [wiki][].
 
   [wiki]: https://github.com/alco/porcelain/wiki
 
 
+## Installation
+
+Add Porcelain as a dependency to your Mix project:
+
+```elixir
+defp deps do
+  [{:porcelain, github: "alco/porcelain"}]
+end
+```
+
+Now, some of the advanced functionality is provided by the external program
+called `goon`. See which particular features it implements in the reference
+docs [here][goon_ref]. Go to `goon`'s [project page][goon] to find out how to
+install it.
+
+  [goon_ref]: http://porcelain.readthedocs.org/en/latest/index.html#document-ref/Porcelain.Driver.Goon
+  [goon]: https://github.com/alco/goon#goon
+
+
 ## Usage
 
-Examples below show some of the common use cases. Refer to the API docs to
-familiarize yourself the complete set of provided functions and options.
+Examples below show some of the common use cases. Refer to the [API docs][ref]
+to familiarize yourself the complete set of provided functions and options.
 
 
 ### Launching one-off programs
@@ -83,8 +102,11 @@ IO.inspect File.read!("output.txt")
 #=> ">like this<\n... >like this< the end.\n"
 ```
 
+
+### Streams
+
 Programs can be spawned asynchronously (using `spawn()` and `spawn_shell()`)
-allowing for continuously exchaning data between Elixir and the external
+allowing for continuously exchanging data between Elixir and the external
 process.
 
 In the next example we will use streams for both input and output.
@@ -105,8 +127,27 @@ Enum.into(outstream, IO.stream(:stdio, :line))
 Proc.alive?(proc)   #=> false
 ```
 
+Alternatively, we could pass the output stream directly to the call to
+`spawn()`:
+
+```elixir
+opts = [
+  in: SocketStream.new('example.com', 80),
+  out: IO.stream(:stderr, :line),
+]
+Porcelain.exec("grep", ["div", "-m", "4"], opts)
+#=> this will be printed to stderr of the running Elixir process:
+#     div {
+#         div {
+# <div>
+# </div>
+```
+
 The `SocketStream` module used above wraps a tcp socket in a stream. Its
 implementation can be found in the `test/util/socket_stream.exs` file.
+
+
+### Messages
 
 If you prefer to exchange messages with the external process, you can do that:
 
