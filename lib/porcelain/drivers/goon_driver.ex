@@ -84,7 +84,7 @@ defmodule Porcelain.Driver.Goon do
   end
 
 
-  @proto_version "0.0"
+  @proto_version "1.0"
 
   @doc false
   defp find_executable(prog, _, :noshell) do
