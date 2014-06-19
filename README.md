@@ -40,6 +40,10 @@ extensions, please refer to the [wiki][].
 Add Porcelain as a dependency to your Mix project:
 
 ```elixir
+def application do
+  [applications: [:porcelain]]
+end
+
 defp deps do
   [{:porcelain, github: "alco/porcelain", ref: "v1.0.0-beta"}]
 end
