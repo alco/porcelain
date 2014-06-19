@@ -41,7 +41,7 @@ Add Porcelain as a dependency to your Mix project:
 
 ```elixir
 defp deps do
-  [{:porcelain, github: "alco/porcelain"}]
+  [{:porcelain, github: "alco/porcelain", ref: "v1.0.0-beta"}]
 end
 ```
 
