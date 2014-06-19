@@ -59,22 +59,15 @@ defmodule PorcelainTest.BasicAsyncTest do
     pid = spawn(fn ->
       Proc.send_input(proc, "hello\n")
       Proc.send_input(proc, ":mark:\n")
-      Proc.send_input(proc, "now we need to feed enough data to fill")
-      Proc.send_input(proc, "the OS buffers. Otherwise we may get both matches")
-      Proc.send_input(proc, "in one message\n")
-      Enum.each(1..1000, fn _ ->
-        Proc.send_input(proc, "please send me a message\n")
-      end)
       Proc.send_input(proc, "\n ignored \n")
       Proc.send_input(proc, ":mark:")
       Proc.send_input(proc, "\n ignored as well")
     end)
 
-    count = Enum.reduce(proc.out, 0, fn line, count ->
-      assert line == ":mark:\n"
-      count + 1
-    end)
-    assert count == 2
+    # in this test we used to check that each match generates a separate
+    # element in the output stream, but input buffering used by the OS negates
+    # the effect of --line-buffered flag passed to grep
+    assert Enum.into(proc.out, "") == ":mark:\n:mark:\n"
     refute Proc.alive?(proc)
     refute Process.alive?(pid)
   end
