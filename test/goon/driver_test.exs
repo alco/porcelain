@@ -2,7 +2,7 @@ defmodule PorcelainTest.GoonTest do
   use ExUnit.Case
 
   import TestUtil
-  import Porcelain, only: [shell: 1, shell: 2, exec: 2, exec: 3]
+  import Porcelain, only: [exec: 2, exec: 3]
 
   alias Porcelain.Result
 
@@ -48,28 +48,38 @@ defmodule PorcelainTest.GoonTest do
     assert result.out =~ ~r/Please specify the protocol version/
   end
 
+  @tag :localbin
+  @tag :posix
+  test "local binary [shell]" do
+    result = Porcelain.shell("./goon", err: :out)
+    assert %Result{out: <<_::binary>>, err: :out, status: 255} = result
+    assert result.out =~ ~r/Please specify the protocol version/
+  end
+
   test "dir" do
     assert exec("sort", ["input.txt"], dir: fixture_path(""))
            == %Result{out: "file\nfrom\ninput\n", err: nil, status: 0}
   end
 
-  #test "env" do
-    #cmd = "echo $custom_var"
-    #assert shell(cmd, env: [custom_var: "hello"])
-           #== %Result{out: "hello\n", err: nil, status: 0}
-    #assert shell(cmd, env: %{"custom_var" => "bye"})
-           #== %Result{out: "bye\n", err: nil, status: 0}
-  #end
+  test "env" do
+    cmd = "echo $custom_var"
+    assert Porcelain.shell(cmd, env: [custom_var: "hello"])
+           == %Result{out: "hello\n", err: nil, status: 0}
+    assert Porcelain.shell(cmd, env: %{"custom_var" => "bye"})
+           == %Result{out: "bye\n", err: nil, status: 0}
+  end
 
-  #test "shell" do
-    #cmd = "head -n 4 | tr a-i A-I | sort"
-    #input = "Alphabetical\nlist\nof\nlines\n"
-    #output = "AlpHABEtICAl\nlInEs\nlIst\noF\n"
-    #assert shell(cmd, in: input) == %Result{out: output, err: nil, status: 0}
+  test "shell" do
+    cmd = "tr a-i A-I | sort"
+    input = "Alphabetical\nlist\nof\nlines\n"
+    output = "AlpHABEtICAl\nlInEs\nlIst\noF\n"
+    assert Porcelain.shell(cmd, in: input)
+           == %Result{out: output, err: nil, status: 0}
 
-    #cmd = "head -n 4 >/dev/null"
-    #assert shell(cmd, in: input) == %Result{out: "", err: nil, status: 0}
-  #end
+    cmd = "cat >/dev/null"
+    assert Porcelain.shell(cmd, in: input)
+           == %Result{out: "", err: nil, status: 0}
+  end
 
   test "input string" do
     assert exec("grep", [">end<"], in: "hi\n>end< once\nbye\n>end< twice\n")

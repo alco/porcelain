@@ -51,7 +51,7 @@ defmodule Porcelain.Driver.Basic do
   defp do_exec(prog, args, opts, shell_flag) do
     opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
-    port = Port.open(exe, port_options(shell_flag, args, opts))
+    port = Port.open(exe, port_options(shell_flag, prog, args, opts))
     Common.communicate(port, opts[:in], opts[:out], opts[:err], &process_data/3,
         async_input: opts[:async_in])
   end
@@ -74,7 +74,7 @@ defmodule Porcelain.Driver.Basic do
     end
 
     pid = spawn(fn ->
-      port = Port.open(exe, port_options(shell_flag, args, opts))
+      port = Port.open(exe, port_options(shell_flag, prog, args, opts))
       Common.communicate(port, opts[:in], out_opt, opts[:err], &process_data/3,
           async_input: true, result: opts[:result])
     end)
@@ -96,14 +96,23 @@ defmodule Porcelain.Driver.Basic do
     end
   end
 
-  defp find_executable(prog, :shell), do: {:spawn, prog}
+  defp find_executable(prog, :shell) do
+    {sh, _} = Common.shell_command(prog)
+    if exe=:os.find_executable(sh) do
+      {:spawn_executable, exe}
+    else
+      throw "Shell not found for: #{prog}"
+    end
+  end
 
 
-  defp port_options(:noshell, args, opts),
+  defp port_options(:noshell, _, args, opts),
     do: [{:args, args} | common_port_options(opts)]
 
-  defp port_options(:shell, _, opts),
-    do: common_port_options(opts)
+  defp port_options(:shell, prog, _, opts) do
+    {_, args} = Common.shell_command(prog)
+    [{:args, args} | common_port_options(opts)]
+  end
 
   defp common_port_options(opts) do
     ret = [:stream|Common.port_options(opts)]

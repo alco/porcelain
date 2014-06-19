@@ -95,13 +95,8 @@ defmodule Porcelain.Driver.Goon do
     end
   end
 
-  defp find_executable(prog, opts, :shell) do
-    invocation =
-      [goon_exe(), goon_options(opts), "--", prog]
-      |> List.flatten
-      |> Enum.join(" ")
-      #|> IO.inspect
-    {:spawn, invocation}
+  defp find_executable(_, _, :shell) do
+    {:spawn_executable, goon_exe()}
   end
 
   defp goon_exe() do
@@ -111,13 +106,14 @@ defmodule Porcelain.Driver.Goon do
 
 
   defp port_options(:noshell, prog, args, opts) do
-    #IO.puts "Choosing port options for :noshell, #{prog} with args #{inspect args} and opts #{inspect opts}"
     args = List.flatten([goon_options(opts), "--", Common.find_executable(prog), args])
-    [{:args, args} | common_port_options(opts)] #|> IO.inspect
+    [{:args, args} | common_port_options(opts)]
   end
 
-  defp port_options(:shell, _, _, opts) do
-    common_port_options(opts) #|> IO.inspect
+  defp port_options(:shell, prog, _, opts) do
+    {sh, sh_args} = Common.shell_command(prog)
+    args = List.flatten([goon_options(opts), "--", List.to_string(sh), sh_args])
+    [{:args, args} | common_port_options(opts)]
   end
 
   defp goon_options(opts) do
