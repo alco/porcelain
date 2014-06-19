@@ -36,7 +36,7 @@ defmodule Porcelain do
   end
 
 
-  @doc """
+  @doc ~S"""
   Execute a program synchronously.
 
   Porcelain will look for the program in PATH and launch it directly, passing
@@ -94,6 +94,13 @@ defmodule Porcelain do
       - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
         `File.open`; the file will be written to starting at the current
         position
+
+      - `<coll>` – feeds program output (as iodata) into the collectable
+        `<coll>`. Useful for outputting directly to the console, for example:
+
+              stream = IO.binstream(:standard_io, :line)
+              exec("echo", ["hello", "world"], out: stream)
+              #=> prints "hello\nworld\n" to stdout
 
     * `:err` – specify the way stderr will be passed back to Elixir.
 
@@ -235,6 +242,26 @@ defmodule Porcelain do
     end
   end
 
+
+  @doc """
+  Reruns the initialization and updates application env.
+
+  This function is useful in the following cases:
+
+    1. The currently used driver is Goon and the location of the goon
+    executable has changed.
+
+    2. You want to change the driver being used.
+
+  """
+  def reinit(driver \\ nil) do
+    if driver do
+      Porcelain.Init.init(driver)
+    else
+      Porcelain.Init.init()
+    end
+  end
+
   ###
 
   defp catch_wrapper(fun) do
@@ -324,16 +351,11 @@ defmodule Porcelain do
   defp compile_input_opt(opt) do
     result = case opt do
       nil                                              -> nil
-      #:pid                                             -> :pid
       {:file, fid}=x when is_pid(fid)                  -> x
       {:path, path}=x when is_binary(path)             -> x
       iodata when is_binary(iodata) or is_list(iodata) -> iodata
       other ->
-        if Enumerable.impl_for(other) != nil do
-          other
-        else
-          :badval
-        end
+        if Enumerable.impl_for(other), do: other, else: :badval
     end
     if result != :badval, do: {:ok, result}
   end
@@ -355,7 +377,8 @@ defmodule Porcelain do
       {:file, fid}=x when is_pid(fid)        -> x
       {:path, path}=x when is_binary(path)   -> x
       {:append, path}=x when is_binary(path) -> x
-      _ -> :badval
+      coll ->
+        if Collectable.impl_for(coll), do: coll, else: :badval
     end
     if result != :badval, do: {:ok, result}
   end
@@ -381,21 +404,11 @@ defmodule Porcelain do
   defp convert_env_val(bin), do: String.to_char_list(bin)
 
 
-  # dynamic selection of the execution driver which does all the hard work
   defp driver() do
-    case :application.get_env(:porcelain, :driver) do
-      :undefined -> Porcelain.Driver.Basic
-      other -> other
-    end
+    {:ok, mod} = :application.get_env(:porcelain, :driver_internal)
+    mod
   end
 
-
-    #{port, input, output, error} = init_port_connection(cmd, args, options)
-    #proc = %Process{in: input, out: output, err: error}
-    #parent = self
-    #pid = Kernel.spawn(fn -> do_loop(port, proc, parent) end)
-    ##Port.connect port, pid
-    #{pid, port}
 
   #@doc """
   #Takes a shell invocation and produces a tuple `{ cmd, args }` suitable for
@@ -422,110 +435,5 @@ defmodule Porcelain do
   ## This splits the list of arguments with the command name already stripped
   #defp split(args) when is_binary(args) do
     #String.split args, " "
-  #end
-
-
-  ## Runs in a recursive loop until the process exits
-  #defp collect_output(port, output, error) do
-    ##IO.puts "Collecting output"
-    #receive do
-      #{ ^port, {:data, <<?o, data :: binary>>} } ->
-        ##IO.puts "Did receive out"
-        #output = process_port_output(output, data, :stdout)
-        #collect_output(port, output, error)
-
-      #{ ^port, {:data, <<?e, data :: binary>>} } ->
-        ##IO.puts "Did receive err"
-        #error = process_port_output(error, data, :stderr)
-        #collect_output(port, output, error)
-
-      #{ ^port, {:exit_status, status} } ->
-        #{ status, flatten(output), flatten(error) }
-
-      ##{ ^port, :eof } ->
-        ##collect_output(port, output, out_data, err_data, true, did_see_exit, status)
-    #end
-  #end
-
-
-  #defp do_loop(port, proc=%Process{in: in_opt}, parent) do
-    #Port.connect port, self
-    #if in_opt != :pid do
-      #send_input(port, in_opt)
-    #end
-    #exchange_data(port, proc, parent)
-  #end
-
-  #defp exchange_data(port, proc=%Process{in: input, out: output, err: error}, parent) do
-    #receive do
-      #{ ^port, {:data, <<?o, data :: binary>>} } ->
-        ##IO.puts "Did receive out"
-        #output = process_port_output(output, data, :stdout)
-        #exchange_data(port, %{proc|out: output}, parent)
-
-      #{ ^port, {:data, <<?e, data :: binary>>} } ->
-        ##IO.puts "Did receive err"
-        #error = process_port_output(error, data, :stderr)
-        #exchange_data(port, %{proc|err: error}, parent)
-
-      #{ ^port, {:exit_status, status} } ->
-        #Kernel.send(parent, {self, %Process{status: status,
-                                            #in: input,
-                                            #out: flatten(output),
-                                            #err: flatten(error)}})
-
-      #{ :data, :eof } ->
-        #Port.command(port, "")
-        #exchange_data(port, proc, parent)
-
-      #{ :data, data } when is_binary(data) ->
-        #Port.command(port, data)
-        #exchange_data(port, proc, parent)
-    #end
-  #end
-
-  #defp port_options(options, cmd, args) do
-    #flags = get_flags(options)
-    ##[{:args, List.flatten([["run", "main.go"], flags, ["--"], [cmd | args]])},
-    #all_args = List.flatten([flags, ["--"], [cmd | args]])
-    #[{:args, all_args}, :binary, {:packet, 2}, :exit_status, :use_stdio, :hide]
-  #end
-
-  #defp get_flags(options) do
-    #[
-      #["-proto", "2l"],
-
-      #case options[:out] do
-        #nil  -> ["-out", ""]
-        #:err -> ["-out", "err"]
-        #_    -> []
-      #end,
-
-      #case options[:err] do
-        #nil  -> ["-err", ""]
-        #:out -> ["-err", "out"]
-        #_    -> []
-      #end
-    #]
-  #end
-
-  #defp open_port(opts) do
-    #goon = if File.exists?("goon") do
-      #'goon'
-    #else
-      #:os.find_executable 'goon'
-    #end
-    #Port.open { :spawn_executable, goon }, opts
-  #end
-
-  ## Processes port options opens a port. Used in both call() and spawn()
-  #defp init_port_connection(cmd, args, options) do
-    #port = open_port(port_options(options, cmd, args))
-
-    #input  = process_input_opts(options[:in])
-    #output = process_output_opts(options[:out])
-    #error  = process_error_opts(options[:err])
-
-    #{ port, input, output, error }
   #end
 end

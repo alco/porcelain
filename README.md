@@ -24,21 +24,41 @@ User-level features include:
   * multiple ways of passing input to the program and getting back its output
     (including working directly with files and Elixir streams)
 
+  * being able to work with programs that try to read the whole input until EOF
+    before producing output
+
   * (_to be implemented_) ability to send OS signals to external processes
 
-  * (_to be implemented_) being able to work with programs that try to read the
-    whole input until EOF before producing output
-
-To find out more about the background on the library's design and possible
-future extensions, please refer to the [wiki][].
+To read background story on the library's design and possible future
+extensions, please refer to the [wiki][].
 
   [wiki]: https://github.com/alco/porcelain/wiki
 
 
+## Installation
+
+Add Porcelain as a dependency to your Mix project:
+
+```elixir
+defp deps do
+  [{:porcelain, github: "alco/porcelain"}]
+end
+```
+
+Now, some of the advanced functionality is provided by the external program
+called `goon`. See which particular features it implements in the reference
+docs [here][goon_ref]. Go to `goon`'s [project page][goon] to find out how to
+install it.
+
+  [goon_ref]: http://porcelain.readthedocs.org/en/latest/index.html#document-ref/Porcelain.Driver.Goon
+  [goon]: https://github.com/alco/goon#goon
+
+
 ## Usage
 
-Examples below show some of the common use cases. Refer to the API docs to
-familiarize yourself the complete set of provided functions and options.
+Examples below show some of the common use cases. Refer to the [API docs][ref]
+to familiarize yourself with the complete set of provided functions and
+options.
 
 
 ### Launching one-off programs
@@ -83,8 +103,11 @@ IO.inspect File.read!("output.txt")
 #=> ">like this<\n... >like this< the end.\n"
 ```
 
+
+### Streams
+
 Programs can be spawned asynchronously (using `spawn()` and `spawn_shell()`)
-allowing for continuously exchaning data between Elixir and the external
+allowing for continuously exchanging data between Elixir and the external
 process.
 
 In the next example we will use streams for both input and output.
@@ -105,8 +128,27 @@ Enum.into(outstream, IO.stream(:stdio, :line))
 Proc.alive?(proc)   #=> false
 ```
 
+Alternatively, we could pass the output stream directly to the call to
+`spawn()`:
+
+```elixir
+opts = [
+  in: SocketStream.new('example.com', 80),
+  out: IO.stream(:stderr, :line),
+]
+Porcelain.exec("grep", ["div", "-m", "4"], opts)
+#=> this will be printed to stderr of the running Elixir process:
+#     div {
+#         div {
+# <div>
+# </div>
+```
+
 The `SocketStream` module used above wraps a tcp socket in a stream. Its
 implementation can be found in the `test/util/socket_stream.exs` file.
+
+
+### Messages
 
 If you prefer to exchange messages with the external process, you can do that:
 
@@ -135,6 +177,42 @@ end
 ```
 
 
+## Configuring the Goon driver
+
+There are a number of options you can tweak to customize the way `goon` is
+used. All of the options described below should put into your `config.exs`
+file.
+
+
+### Setting the driver
+
+```elixir
+config :porcelain, :driver, <driver>
+```
+
+This option allows you to set a particular driver to be used at all times.
+
+By default, Porcelain will try to detect the `goon` executable. If it can find
+one, it will use `Porcelain.Driver.Goon`. Otherwise, it will print a warning to
+stderr and fall back to `Porcelain.Driver.Basic`.
+
+By setting `Porcelain.Driver.Basic` above you can force Porcelain to always
+use the basic driver.
+
+If you set `Porcelain.Driver.Goon`, Porcelain will always use the Goon driver
+and will fail to start if the `goon` executable can't be found.
+
+
+### Goon options
+
+```elixir
+config :porcelain, :goon_driver_path, <path>
+```
+
+Set an absolute path to the `goon` executable. If this is not set, Porcelain
+will search your system's `PATH` by default.
+
+
 ## Going deeper
 
 Take a look at the [reference docs][ref] for the full description of all
@@ -146,8 +224,9 @@ provided functions and supported options.
 ## Known issues and roadmap
 
   * there are known crashes happening when using Porcelain across two nodes
-  * the support for EOF handling and OS signals is planned to be included in
-    the next stable version
+  * error handling when using the Goon driver is not completely shaped out
+  * the support for OS signals is planned to be included in a later release
+    release
 
 
 ## License

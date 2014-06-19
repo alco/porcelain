@@ -1,6 +1,5 @@
 /ebin
 /deps
 /_build
-erl_crash.dump
-goon
-docs/
+/goon
+/docs/
