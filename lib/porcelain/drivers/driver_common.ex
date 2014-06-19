@@ -43,22 +43,9 @@ defmodule Porcelain.Driver.Common do
   end
 
 
-  # Finding shell command logic from :os.cmd in OTP
-  # https://github.com/erlang/otp/blob/8deb96fb1d017307e22d2ab88968b9ef9f1b71d0/lib/kernel/src/os.erl#L184
   def shell_command(command) do
-    case :os.type do
-      {:unix, _} ->
-        {'sh', ["-c", command]}
-
-      {:win32, osname} ->
-        args = ["/c", command]
-        shell = case {System.get_env("COMSPEC"), osname} do
-          {nil, :windows} -> 'command.com'
-          {nil, _}        -> 'cmd'
-          {cmd, _}        -> cmd
-        end
-        {shell, args}
-    end
+    {:ok, {sh, args}} = :application.get_env(:porcelain, :shell_command)
+    {sh, args ++ [command]}
   end
 
   ###

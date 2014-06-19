@@ -7,6 +7,7 @@ defmodule Porcelain.Init do
   def init() do
     driver = get_env(:driver)
     init(driver)
+    init_shell()
   end
 
   def init(nil) do
@@ -27,6 +28,24 @@ defmodule Porcelain.Init do
   end
 
   def init(mod) when is_atom(mod), do: set_driver(mod)
+
+
+  defp init_shell() do
+    # Finding shell command logic from :os.cmd in OTP
+    # https://github.com/erlang/otp/blob/8deb96fb1d017307e22d2ab88968b9ef9f1b71d0/lib/kernel/src/os.erl#L184
+    case :os.type do
+      {:unix, _} ->
+        set_env(:shell_command, {'sh', ["-c"]})
+
+      {:win32, osname} ->
+        shell = case {System.get_env("COMSPEC"), osname} do
+          {nil, :windows} -> 'command.com'
+          {nil, _}        -> 'cmd'
+          {cmd, _}        -> cmd
+        end
+        set_env(:shell_command, {shell, ["/c"]})
+    end
+  end
 
 
   defp get_env(key) do
