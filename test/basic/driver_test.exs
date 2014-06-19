@@ -176,8 +176,14 @@ defmodule PorcelainTest.BasicTest do
     input = "b\nd\nz\na\nc\ng\nO\n"
     stream = IO.binstream(:stdio, :line)
     assert capture_io(fn ->
-      assert shell(cmd, in: input, out: {:into, stream})
-             == %Result{out: {:into, stream}, err: nil, status: 0}
+      assert shell(cmd, in: input, out: stream)
+             == %Result{out: stream, err: nil, status: 0}
     end) == "O\na\nb\nc\nd\ng\nz\n"
+  end
+
+  test "collectable string" do
+    input = "1\nhi\n2\nhi \n"
+    assert exec("grep", ["hi", "-m", "2"], in: input, out: "hello: ")
+           == %Result{out: "hello: hi\nhi \n", err: nil, status: 0}
   end
 end

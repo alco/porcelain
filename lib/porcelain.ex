@@ -95,12 +95,11 @@ defmodule Porcelain do
         `File.open`; the file will be written to starting at the current
         position
 
-      - `{:into, <coll>}` – feeds program output (as iodata) into the
-        collectable `<coll>`. Useful for outputting directly to the console,
-        for example:
+      - `<coll>` – feeds program output (as iodata) into the collectable
+        `<coll>`. Useful for outputting directly to the console, for example:
 
               stream = IO.binstream(:standard_io, :line)
-              exec("echo", ["hello", "world"], out: {:into, stream})
+              exec("echo", ["hello", "world"], out: stream)
               #=> prints "hello\nworld\n" to stdout
 
     * `:err` – specify the way stderr will be passed back to Elixir.
@@ -352,7 +351,6 @@ defmodule Porcelain do
   defp compile_input_opt(opt) do
     result = case opt do
       nil                                              -> nil
-      #:pid                                             -> :pid
       {:file, fid}=x when is_pid(fid)                  -> x
       {:path, path}=x when is_binary(path)             -> x
       iodata when is_binary(iodata) or is_list(iodata) -> iodata
@@ -379,9 +377,8 @@ defmodule Porcelain do
       {:file, fid}=x when is_pid(fid)        -> x
       {:path, path}=x when is_binary(path)   -> x
       {:append, path}=x when is_binary(path) -> x
-      {:into, coll}=x ->
-        if Collectable.impl_for(coll), do: x, else: :badval
-      _ -> :badval
+      coll ->
+        if Collectable.impl_for(coll), do: coll, else: :badval
     end
     if result != :badval, do: {:ok, result}
   end

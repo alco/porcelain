@@ -207,21 +207,6 @@ defmodule Porcelain.Driver.Common do
     x
   end
 
-  def process_port_output({:into, coll}, data) do
-    {:ok, server} = StreamServer.start()
-    parent = self()
-    spawn(fn ->
-      Enum.into(Stream.unfold(server, &read_stream/1), coll)
-      send(parent, {:into, server})
-    end)
-    process_port_output({:into, coll, server}, data)
-  end
-
-  def process_port_output({:into, _, server}=x, data) do
-    StreamServer.put_data(server, data)
-    x
-  end
-
   def process_port_output({:stream, server}=x, data) do
     StreamServer.put_data(server, data)
     x
@@ -232,16 +217,31 @@ defmodule Porcelain.Driver.Common do
     x
   end
 
+  def process_port_output({:into, _, server}=x, data) do
+    StreamServer.put_data(server, data)
+    x
+  end
+
+  def process_port_output(coll, data) do
+    {:ok, server} = StreamServer.start()
+    parent = self()
+    spawn(fn ->
+      ret = Enum.into(Stream.unfold(server, &read_stream/1), coll)
+      send(parent, {:into, ret, server})
+    end)
+    process_port_output({:into, coll, server}, data)
+  end
+
   defp flatten(thing) do
     case thing do
       {:string, data}    -> IO.iodata_to_binary(data)
       {:iodata, data}    -> data
       {:path, path, fid} -> File.close(fid); {:path, path}
       {:stream, server}  -> StreamServer.finish(server)
-      {:into, coll, server} ->
+      {:into, _, server} ->
         StreamServer.finish(server)
         receive do
-          {:into, ^server} -> {:into, coll}
+          {:into, ret, ^server} -> ret
         end
       other -> other
     end
