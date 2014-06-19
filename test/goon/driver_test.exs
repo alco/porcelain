@@ -163,7 +163,7 @@ defmodule PorcelainTest.GoonTest do
     import ExUnit.CaptureIO
 
     input = "b\nd\nz\na\nc\ng\nO\n"
-    stream = IO.binstream(:standard_io, :line)
+    stream = IO.binstream(:stdio, :line)
     assert capture_io(fn ->
       assert exec("sort", [], in: input, out: {:into, stream})
              == %Result{out: {:into, stream}, err: nil, status: 0}
@@ -174,7 +174,7 @@ defmodule PorcelainTest.GoonTest do
     import ExUnit.CaptureIO
 
     input = "b\nd\nz\na\nc\ng\nO\n"
-    stream = IO.binstream(:standard_io, :line)
+    stream = IO.binstream(:stdio, :line)
     opts = [in: input, out: nil, err: {:into, stream}]
     assert capture_io(fn ->
       assert Porcelain.shell("sort 1>&2", opts)

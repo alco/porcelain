@@ -209,7 +209,11 @@ defmodule Porcelain.Driver.Common do
 
   def process_port_output({:into, coll}, data) do
     {:ok, server} = StreamServer.start()
-    spawn(fn -> Enum.into(Stream.unfold(server, &read_stream/1), coll) end)
+    parent = self()
+    spawn(fn ->
+      Enum.into(Stream.unfold(server, &read_stream/1), coll)
+      send(parent, {:into, server})
+    end)
     process_port_output({:into, coll, server}, data)
   end
 
@@ -233,9 +237,13 @@ defmodule Porcelain.Driver.Common do
       {:string, data}    -> IO.iodata_to_binary(data)
       {:iodata, data}    -> data
       {:path, path, fid} -> File.close(fid); {:path, path}
-      {:into, coll, server} -> StreamServer.finish(server); {:into, coll}
       {:stream, server}  -> StreamServer.finish(server)
-      other              -> other
+      {:into, coll, server} ->
+        StreamServer.finish(server)
+        receive do
+          {:into, ^server} -> {:into, coll}
+        end
+      other -> other
     end
   end
 end

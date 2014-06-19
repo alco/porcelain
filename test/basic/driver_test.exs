@@ -174,7 +174,7 @@ defmodule PorcelainTest.BasicTest do
 
     cmd = "head -n 7 | sort"
     input = "b\nd\nz\na\nc\ng\nO\n"
-    stream = IO.binstream(:standard_io, :line)
+    stream = IO.binstream(:stdio, :line)
     assert capture_io(fn ->
       assert shell(cmd, in: input, out: {:into, stream})
              == %Result{out: {:into, stream}, err: nil, status: 0}
