@@ -19,7 +19,7 @@ defmodule Porcelain.Driver.Common.StreamServer do
 
   def put_data(pid, data) do
     log "Stream server put data #{inspect data}"
-    GenServer.cast(pid, {:data, data})
+    :ok = GenServer.call(pid, {:data, data})
   end
 
   def finish(pid) do
@@ -29,13 +29,13 @@ defmodule Porcelain.Driver.Common.StreamServer do
 
   ###
 
-  def handle_call(:get_data, _from, state(done: true, chunks: q)) do
+  def handle_call(:get_data, _from, state(done: true, chunks: q)=state) do
     if :queue.is_empty(q) do
       log "Stream server did stop"
       {:stop, :shutdown, nil, nil}
     else
       log "Stream server reply"
-      {:reply, :queue.head(q), state(chunks: :queue.tail(q))}
+      {:reply, :queue.head(q), state(state, chunks: :queue.tail(q))}
     end
   end
 
@@ -50,17 +50,17 @@ defmodule Porcelain.Driver.Common.StreamServer do
   end
 
 
-  def handle_cast({:data, data}, state(chunks: q, client: nil)=state) do
+  def handle_call({:data, data}, _from, state(chunks: q, client: nil)=state) do
     log "Stream server got data"
-    {:noreply, state(state, chunks: :queue.in(data, q))}
+    {:reply, :ok, state(state, chunks: :queue.in(data, q))}
   end
 
-  def handle_cast({:data, data}, state(chunks: q, client: client)=state) do
+  def handle_call({:data, data}, _from, state(chunks: q, client: client)=state) do
     true = :queue.is_empty(q)
 
     log "Stream server got data. Sending to client"
     GenServer.reply(client, data)
-    {:noreply, state(state, client: nil)}
+    {:reply, :ok, state(state, client: nil)}
   end
 
 
@@ -75,7 +75,7 @@ defmodule Porcelain.Driver.Common.StreamServer do
       {:stop, :shutdown, nil}
     else
       GenServer.reply(client, :queue.head(q))
-      {:noreply, state(state, chunks: :queue.tail(q))}
+      {:noreply, state(state, done: true, chunks: :queue.tail(q))}
     end
   end
 
