@@ -36,7 +36,7 @@ defmodule Porcelain do
   end
 
 
-  @doc """
+  @doc ~S"""
   Execute a program synchronously.
 
   Porcelain will look for the program in PATH and launch it directly, passing
@@ -94,6 +94,14 @@ defmodule Porcelain do
       - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
         `File.open`; the file will be written to starting at the current
         position
+
+      - `{:into, <coll>}` – feeds program output (as iodata) into the
+        collectable `<coll>`. Useful for outputting directly to the console,
+        for example:
+
+              stream = IO.binstream(:standard_io, :line)
+              exec("echo", ["hello", "world"], out: {:into, stream})
+              #=> prints "hello\nworld\n" to stdout
 
     * `:err` – specify the way stderr will be passed back to Elixir.
 
@@ -349,11 +357,7 @@ defmodule Porcelain do
       {:path, path}=x when is_binary(path)             -> x
       iodata when is_binary(iodata) or is_list(iodata) -> iodata
       other ->
-        if Enumerable.impl_for(other) != nil do
-          other
-        else
-          :badval
-        end
+        if Enumerable.impl_for(other), do: other, else: :badval
     end
     if result != :badval, do: {:ok, result}
   end
@@ -375,6 +379,8 @@ defmodule Porcelain do
       {:file, fid}=x when is_pid(fid)        -> x
       {:path, path}=x when is_binary(path)   -> x
       {:append, path}=x when is_binary(path) -> x
+      {:into, coll}=x ->
+        if Collectable.impl_for(coll), do: x, else: :badval
       _ -> :badval
     end
     if result != :badval, do: {:ok, result}

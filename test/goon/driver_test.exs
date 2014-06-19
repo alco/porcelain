@@ -158,4 +158,27 @@ defmodule PorcelainTest.GoonTest do
     end)
     assert File.read!(outpath) == "hellfile\nfrom\ninput\n"
   end
+
+  test "collectable output" do
+    import ExUnit.CaptureIO
+
+    input = "b\nd\nz\na\nc\ng\nO\n"
+    stream = IO.binstream(:standard_io, :line)
+    assert capture_io(fn ->
+      assert exec("sort", [], in: input, out: {:into, stream})
+             == %Result{out: {:into, stream}, err: nil, status: 0}
+    end) == "O\na\nb\nc\nd\ng\nz\n"
+  end
+
+  test "collectable stderr" do
+    import ExUnit.CaptureIO
+
+    input = "b\nd\nz\na\nc\ng\nO\n"
+    stream = IO.binstream(:standard_io, :line)
+    opts = [in: input, out: nil, err: {:into, stream}]
+    assert capture_io(fn ->
+      assert Porcelain.shell("sort 1>&2", opts)
+             == %Result{out: nil, err: {:into, stream}, status: 0}
+    end) == "O\na\nb\nc\nd\ng\nz\n"
+  end
 end

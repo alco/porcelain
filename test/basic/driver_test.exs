@@ -167,4 +167,17 @@ defmodule PorcelainTest.BasicTest do
     end)
     assert File.read!(outpath) == "hellfile\nfrom\ninput\n"
   end
+
+  @tag :posix
+  test "collectable output" do
+    import ExUnit.CaptureIO
+
+    cmd = "head -n 7 | sort"
+    input = "b\nd\nz\na\nc\ng\nO\n"
+    stream = IO.binstream(:standard_io, :line)
+    assert capture_io(fn ->
+      assert shell(cmd, in: input, out: {:into, stream})
+             == %Result{out: {:into, stream}, err: nil, status: 0}
+    end) == "O\na\nb\nc\nd\ng\nz\n"
+  end
 end
