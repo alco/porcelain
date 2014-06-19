@@ -55,7 +55,7 @@ defmodule PorcelainTest.GoonAsyncTest do
       Proc.send_input(proc, "now we need to feed enough data to fill")
       Proc.send_input(proc, "the OS buffers. Otherwise we may get both matches")
       Proc.send_input(proc, "in one message\n")
-      Enum.each(1..100, fn _ ->
+      Enum.each(1..1000, fn _ ->
         Proc.send_input(proc, "please send me a message\n")
       end)
       Proc.send_input(proc, "\n ignored \n")
