@@ -29,7 +29,7 @@ defmodule PorcelainTest.BasicTest do
 
     result = exec("date", ["rubbish"], err: :out)
     assert %Result{out: <<_::binary>>, err: :out, status: 1} = result
-    assert result.out =~ ~r/illegal time format/
+    assert result.out =~ ~r/date: (illegal|invalid)/
   end
 
   @tag :localbin
@@ -74,7 +74,7 @@ defmodule PorcelainTest.BasicTest do
     cmd = "date rubbish 2>&1"
     result = shell(cmd, in: input)
     assert %Result{out: <<_::binary>>, err: nil, status: 1} = result
-    assert result.out =~ ~r/illegal time format/
+    assert result.out =~ ~r/date: (illegal|invalid)/
   end
 
   test "input string" do
@@ -172,13 +172,13 @@ defmodule PorcelainTest.BasicTest do
   test "collectable output" do
     import ExUnit.CaptureIO
 
-    cmd = "head -n 7 | sort"
-    input = "b\nd\nz\na\nc\ng\nO\n"
+    cmd = "head -n 6 | sort"
+    input = "b\nd\nz\na\nc\ng\n"
     stream = IO.binstream(:stdio, :line)
     assert capture_io(fn ->
       assert shell(cmd, in: input, out: stream)
              == %Result{out: stream, err: nil, status: 0}
-    end) == "O\na\nb\nc\nd\ng\nz\n"
+    end) == "a\nb\nc\nd\ng\nz\n"
   end
 
   test "collectable string" do

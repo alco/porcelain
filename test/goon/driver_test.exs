@@ -32,13 +32,13 @@ defmodule PorcelainTest.GoonTest do
 
     result = exec("date", ["rubbish"], out: nil, err: :string)
     assert %Result{out: nil, err: <<_::binary>>, status: 1} = result
-    assert result.err =~ ~r/illegal time format/
+    assert result.err =~ ~r/date: (illegal|invalid)/
   end
 
   test "stderr redirect" do
     result = exec("date", ["rubbish"], err: :out)
     assert %Result{out: <<_::binary>>, err: :out, status: 1} = result
-    assert result.out =~ ~r/illegal time format/
+    assert result.out =~ ~r/date: (illegal|invalid)/
   end
 
   @tag :localbin
@@ -162,23 +162,23 @@ defmodule PorcelainTest.GoonTest do
   test "collectable output" do
     import ExUnit.CaptureIO
 
-    input = "b\nd\nz\na\nc\ng\nO\n"
+    input = "b\nd\nz\na\nc\ng\n"
     stream = IO.binstream(:stdio, :line)
     assert capture_io(fn ->
       assert exec("sort", [], in: input, out: stream)
              == %Result{out: stream, err: nil, status: 0}
-    end) == "O\na\nb\nc\nd\ng\nz\n"
+    end) == "a\nb\nc\nd\ng\nz\n"
   end
 
   test "collectable stderr" do
     import ExUnit.CaptureIO
 
-    input = "b\nd\nz\na\nc\ng\nO\n"
+    input = "b\nd\nz\na\nc\ng\n"
     stream = IO.binstream(:stdio, :line)
     opts = [in: input, out: nil, err: stream]
     assert capture_io(fn ->
       assert Porcelain.shell("sort 1>&2", opts)
              == %Result{out: nil, err: stream, status: 0}
-    end) == "O\na\nb\nc\nd\ng\nz\n"
+    end) == "a\nb\nc\nd\ng\nz\n"
   end
 end
