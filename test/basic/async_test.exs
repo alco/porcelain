@@ -8,6 +8,7 @@ defmodule PorcelainTest.BasicAsyncTest do
     Porcelain.reinit(Porcelain.Driver.Basic)
   end
 
+  @tag :posix
   test "spawn keep result" do
     cmd = "head -n 3 | cut -b 1-4"
     proc = Porcelain.spawn_shell(cmd,
@@ -22,6 +23,7 @@ defmodule PorcelainTest.BasicAsyncTest do
     assert %Result{status: 0, out: "mult\nline\nof i\n", err: nil} = result
   end
 
+  @tag :posix
   test "spawn discard result" do
     cmd = "head -n 3 | cut -b 1-4"
     proc = Porcelain.spawn_shell(cmd,
@@ -33,6 +35,7 @@ defmodule PorcelainTest.BasicAsyncTest do
     refute Proc.alive?(proc)
   end
 
+  @tag :posix
   test "spawn and stop" do
     cmd = "grep whatever"
     proc = Porcelain.spawn_shell(cmd, in: "whatever")
@@ -46,6 +49,7 @@ defmodule PorcelainTest.BasicAsyncTest do
     assert Proc.await(proc) == {:error, :noproc}
   end
 
+  @tag :posix
   test "spawn send input" do
     cmd = "grep ':mark:' -m 2 --line-buffered"
     proc = Porcelain.spawn_shell(cmd, in: :receive, out: :stream)
@@ -92,6 +96,7 @@ defmodule PorcelainTest.BasicAsyncTest do
     refute Proc.alive?(proc)
   end
 
+  @tag :posix
   test "spawn message passing no result" do
     self_pid = self()
     proc = Porcelain.spawn_shell("grep :mark: -m 1",
