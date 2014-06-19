@@ -45,7 +45,7 @@ def application do
 end
 
 defp deps do
-  [{:porcelain, github: "alco/porcelain", ref: "v1.0.0-beta"}]
+  [{:porcelain, github: "alco/porcelain", tag: "v1.0.0-beta"}]
 end
 ```
 
