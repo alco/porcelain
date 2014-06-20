@@ -37,6 +37,7 @@ defmodule PorcelainTest.ErrorsTest do
   end
 
   @tag :posix
+  @tag :goon
   test "non-existent program [goon, shell]" do
     Porcelain.reinit(Porcelain.Driver.Goon)
 
@@ -46,6 +47,7 @@ defmodule PorcelainTest.ErrorsTest do
     assert result.out =~ ~r/whatever: .*?not found/
   end
 
+  @tag :goon
   test "non-existent program [goon, noshell]" do
     Porcelain.reinit(Porcelain.Driver.Goon)
 
