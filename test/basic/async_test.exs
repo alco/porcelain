@@ -12,7 +12,7 @@ defmodule PorcelainTest.BasicAsyncTest do
   test "spawn keep result" do
     cmd = "head -n 3 | cut -b 1-4"
     proc = Porcelain.spawn_shell(cmd,
-                in: "multiple\nlines\nof input\n")
+                in: "multiple\nlines\nof input\nignored line\n")
     assert %Proc{out: :string, err: nil} = proc
 
     :timer.sleep(100)
@@ -27,7 +27,7 @@ defmodule PorcelainTest.BasicAsyncTest do
   test "spawn discard result" do
     cmd = "head -n 3 | cut -b 1-4"
     proc = Porcelain.spawn_shell(cmd,
-                in: "multiple\nlines\nof input\n", result: :discard)
+                in: "multiple\nlines\nof input\nignored line\n", result: :discard)
     assert %Proc{out: :string, err: nil} = proc
 
     :timer.sleep(100)
