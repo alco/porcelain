@@ -5,7 +5,7 @@ defmodule PorcelainTest.ErrorsTest do
   alias Porcelain.Result
 
   test "bad option" do
-    Porcelain.reinit(Porcelain.Driver.Basic)
+    :ok = Porcelain.reinit(Porcelain.Driver.Basic)
 
     msg = "Invalid options: [option: \"value\"]"
     assert_raise Porcelain.UsageError, msg, fn ->
@@ -20,7 +20,7 @@ defmodule PorcelainTest.ErrorsTest do
 
   @tag :posix
   test "non-existent program [basic, shell]" do
-    Porcelain.reinit(Porcelain.Driver.Basic)
+    :ok = Porcelain.reinit(Porcelain.Driver.Basic)
 
     result = shell("whatever", err: :out)
     assert %Result{err: :out, out: <<_::binary>>, status: 127}
@@ -38,8 +38,8 @@ defmodule PorcelainTest.ErrorsTest do
 
   @tag :posix
   @tag :goon
-  test "non-existent program [goon, shell]" do
-    Porcelain.reinit(Porcelain.Driver.Goon)
+  test "non-existent program [goon, shell, redirect]" do
+    :ok = Porcelain.reinit(Porcelain.Driver.Goon)
 
     result = shell("whatever", err: :out)
     assert %Result{err: :out, out: <<_::binary>>, status: 127}
@@ -47,9 +47,20 @@ defmodule PorcelainTest.ErrorsTest do
     assert result.out =~ ~r/whatever: .*?not found/
   end
 
+  @tag :posix
+  @tag :goon
+  test "non-existent program [goon, shell]" do
+    :ok = Porcelain.reinit(Porcelain.Driver.Goon)
+
+    result = shell("whatever", err: :string)
+    assert %Result{err: <<_::binary>>, out: "", status: 127}
+           = result
+    assert result.err =~ ~r/whatever: .*?not found/
+  end
+
   @tag :goon
   test "non-existent program [goon, noshell]" do
-    Porcelain.reinit(Porcelain.Driver.Goon)
+    :ok = Porcelain.reinit(Porcelain.Driver.Goon)
 
     assert exec("whatever", [])
            == {:error, "Command not found: whatever"}
