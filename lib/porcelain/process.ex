@@ -70,6 +70,8 @@ defmodule Porcelain.Process do
   @doc """
   Stops the process created with `Porcelain.spawn/3` or
   `Porcelain.spawn_shell/2`. Also closes the underlying port.
+
+  May cause "broken pipe" message to be written to stderr.
   """
   @spec stop(t) :: true
 
