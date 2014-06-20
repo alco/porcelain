@@ -12,4 +12,4 @@ before_install:
 before_script:
     - export PATH=`pwd`/elixir/bin:$PATH
 
-script: mix test --trace --include localbin
+script: mix test --trace --exclude goon
