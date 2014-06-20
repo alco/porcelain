@@ -7,4 +7,4 @@ ADD goon /home/porcelain/goon
 WORKDIR /home/porcelain
 RUN MIX_ENV=test mix compile
 
-CMD mix test --no-compile --trace
+CMD mix test --no-compile --trace --include localbin
