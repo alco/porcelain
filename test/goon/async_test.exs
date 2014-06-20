@@ -4,6 +4,8 @@ defmodule PorcelainTest.GoonAsyncTest do
   alias Porcelain.Process, as: Proc
   alias Porcelain.Result
 
+  @moduletag :goon
+
   setup_all do
     Porcelain.reinit(Porcelain.Driver.Goon)
   end

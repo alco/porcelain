@@ -6,6 +6,8 @@ defmodule PorcelainTest.GoonTest do
 
   alias Porcelain.Result
 
+  @moduletag :goon
+
   setup_all do
     Porcelain.reinit(Porcelain.Driver.Goon)
   end
