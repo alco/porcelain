@@ -5,7 +5,7 @@ build: build/porcelain build/goon
 	docker build -t porcelain $@
 
 build/porcelain:
-	git clone git@github.com:alco/porcelain.git $@
+	git clone .. $@
 
 build/goon:
 	wget https://github.com/alco/goon/releases/download/v1.0.1/goon_linux_amd64.tar.gz
