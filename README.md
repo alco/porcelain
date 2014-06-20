@@ -1,6 +1,8 @@
 Porcelain
 =========
 
+![Build status][https://travis-ci.org/alco/porcelain.svg "Build status"]
+
 Porcelain implements a saner approach to launching and communicating with
 external OS processes from Elixir. Built on top of Erlang's ports, it provides
 richer functionality and simpler API.
