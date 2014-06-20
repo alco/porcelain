@@ -12,4 +12,8 @@ before_install:
 before_script:
     - export PATH=`pwd`/elixir/bin:$PATH
 
-script: mix test --trace --exclude goon
+env:
+    - GOON_ENABLED=1
+    - GOON_ENABLED=0
+
+script: "test/travis.sh"
