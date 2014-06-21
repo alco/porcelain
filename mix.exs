@@ -43,7 +43,7 @@ defmodule Porcelain.Mixfile do
       contributors: ["Alexei Sholik"],
       licenses: ["MIT"],
       links: %{
-        "Documentation" => "http://http://porcelain.readthedocs.org",
+        "Documentation" => "http://porcelain.readthedocs.org",
         "GitHub" => "https://github.com/alco/porcelain",
       }
     ]
