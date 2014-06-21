@@ -2,10 +2,14 @@ defmodule Porcelain.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :porcelain,
-     version: "1.0.0-beta",
-     elixir: "~> 0.13.3 or ~> 0.14.0",
-     docs: docs]
+    [
+      app: :porcelain,
+      version: "1.0.0",
+      elixir: "~> 0.13.3 or ~> 0.14.0",
+      docs: docs,
+      description: description,
+      package: package,
+    ]
   end
 
   def application do
@@ -24,6 +28,24 @@ defmodule Porcelain.Mixfile do
         html_theme: "pyramid",
         html_type: "singlehtml"
       ]
+    ]
+  end
+
+  defp description do
+    "Porcelain implements a saner approach to launching and communicating " <>
+    "with external OS processes from Elixir. Built on top of Erlang's ports, " <>
+    "it provides richer functionality and simpler API."
+  end
+
+  defp package do
+    [
+      files: ["lib", "mix.exs", "README.md", "CHANGELOG.md", "LICENSE"],
+      contributors: ["Alexei Sholik"],
+      licenses: ["MIT"],
+      links: %{
+        "Documentation" => "http://http://porcelain.readthedocs.org",
+        "GitHub" => "https://github.com/alco/porcelain",
+      }
     ]
   end
 
