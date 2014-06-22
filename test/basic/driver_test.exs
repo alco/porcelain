@@ -119,6 +119,16 @@ defmodule PorcelainTest.BasicTest do
     end)
   end
 
+  @tag :posix
+  test "input raw file" do
+    cmd = "head -n 3 | sort -r"
+    path = fixture_path("input.txt")
+    File.open(path, [:raw], fn file ->
+      assert shell(cmd, in: {:file, file})
+             == %Result{out: "input\nfrom\nfile\n", err: nil, status: 0}
+    end)
+  end
+
   test "async input" do
     assert exec("grep", [">end<", "-m", "2"], in: "hi\n>end< once\nbye\n>end< twice\n", async_in: true)
            == %Result{out: ">end< once\n>end< twice\n", err: nil, status: 0}
@@ -160,6 +170,22 @@ defmodule PorcelainTest.BasicTest do
     File.rm_rf!(outpath)
     File.open(outpath, [:write], fn file ->
       :ok = IO.write(file, "hello.")
+      pos = 4
+      {:ok, ^pos} = :file.position(file, pos)
+      assert shell(cmd, in: {:path, inpath}, out: {:file, file})
+             == %Result{out: {:file, file}, err: nil, status: 0}
+    end)
+    assert File.read!(outpath) == "hellfile\nfrom\ninput\n"
+  end
+
+  @tag :posix
+  test "output raw file" do
+    cmd = "head -n 3 | sort"
+    inpath = fixture_path("input.txt")
+    outpath = Path.join(System.tmp_dir, "tmpoutput")
+    File.rm_rf!(outpath)
+    File.open(outpath, [:raw, :write], fn file ->
+      :ok = :file.write(file, "hello.")
       pos = 4
       {:ok, ^pos} = :file.position(file, pos)
       assert shell(cmd, in: {:path, inpath}, out: {:file, file})

@@ -86,12 +86,13 @@ defmodule Porcelain.Driver.Common do
   @file_block_size 1024*1024
 
   defp pipe_file(fid, port) do
-    Stream.repeatedly(fn -> IO.read(fid, @file_block_size) end)
+    Stream.repeatedly(fn -> :file.read(fid, @file_block_size) end)
     |> Stream.take_while(fn
       :eof        -> false
       {:error, _} -> false
       _           -> true
     end)
+    |> Stream.map(fn {:ok, data} -> data end)
     |> stream_to_port(port)
   end
 
@@ -188,7 +189,7 @@ defmodule Porcelain.Driver.Common do
   end
 
   def process_port_output({:file, fid}=x, data) do
-    :ok = IO.write(fid, data)
+    :ok = :file.write(fid, data)
     x
   end
 

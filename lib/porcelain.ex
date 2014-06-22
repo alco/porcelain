@@ -66,7 +66,7 @@ defmodule Porcelain do
 
       - `{:path, <string>}` – path to a file to be fed into stdin
 
-      - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
+      - `{:file, <file>}` – `<file>` is a file descriptor obtained from e.g.
         `File.open`; the file will be read from the current position until EOF
 
     * `:async_in` – can be `true` or `false` (default). When enabled, an
@@ -91,7 +91,7 @@ defmodule Porcelain do
       - `{:append, <string>}` – the output will be appended to the the file at
         path (it will be created first if needed)
 
-      - `{:file, <file>}` – `<file>` is a file pid obtained from e.g.
+      - `{:file, <file>}` – `<file>` is a file descriptor obtained from e.g.
         `File.open`; the file will be written to starting at the current
         position
 
@@ -351,7 +351,7 @@ defmodule Porcelain do
   defp compile_input_opt(opt) do
     result = case opt do
       nil                                              -> nil
-      {:file, fid}=x when is_pid(fid)                  -> x
+      {:file, _}=x                                     -> x
       {:path, path}=x when is_binary(path)             -> x
       iodata when is_binary(iodata) or is_list(iodata) -> iodata
       other ->
@@ -374,7 +374,7 @@ defmodule Porcelain do
       nil                                    -> nil
       :string                                -> {:string, ""}
       :iodata                                -> {:iodata, ""}
-      {:file, fid}=x when is_pid(fid)        -> x
+      {:file, _}=x                           -> x
       {:path, path}=x when is_binary(path)   -> x
       {:append, path}=x when is_binary(path) -> x
       coll ->
