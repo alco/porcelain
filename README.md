@@ -62,9 +62,9 @@ install it.
 
 ## Usage
 
-Examples below show some of the common use cases. Refer to the [API docs][ref]
-to familiarize yourself with the complete set of provided functions and
-options.
+Examples below show some of the common use cases. See also this [demo
+app][exapp]. Refer to the [API docs][ref] to familiarize yourself with the
+complete set of provided functions and options.
 
 
 ### Launching one-off programs
@@ -224,6 +224,7 @@ will search your system's `PATH` by default.
 Take a look at the [reference docs][ref] for the full description of all
 provided functions and supported options.
 
+  [exapp]: https://github.com/alco/porcelain_example
   [ref]: http://porcelain.readthedocs.org
 
 
