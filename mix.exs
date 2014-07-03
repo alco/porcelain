@@ -4,7 +4,7 @@ defmodule Porcelain.Mixfile do
   def project do
     [
       app: :porcelain,
-      version: "1.0.0",
+      version: "1.1.0-dev",
       elixir: "~> 0.13.3 or ~> 0.14.0",
       docs: docs,
       description: description,
