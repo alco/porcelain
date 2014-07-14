@@ -12,6 +12,8 @@ defmodule Porcelain.Process do
   """
   defstruct [:pid, :out, :err]
 
+  @type t :: %__MODULE__{}
+
 
   @doc """
   Send iodata to the process's stdin.
