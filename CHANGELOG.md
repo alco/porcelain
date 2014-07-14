@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v1.1.1 - Jul 14, 2014
+
+  * add missing type for the `Result` struct (minor change)
+
+
 ## v1.1.0 - Jul 14, 2014
 
   * support files opened in raw mode for input and output

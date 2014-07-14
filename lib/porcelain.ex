@@ -33,6 +33,7 @@ defmodule Porcelain do
     """
 
     defstruct [:status, :out, :err]
+    @type t :: %__MODULE__{}
   end
 
 
