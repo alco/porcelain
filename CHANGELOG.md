@@ -1,6 +1,11 @@
 Changelog
 =========
 
+## v1.1.2 - Aug 4, 2014
+
+  * support Elixir versions 0.14.3 up to 2.0.0
+
+
 ## v1.1.1 - Jul 14, 2014
 
   * add missing type for the `Result` struct (minor change)

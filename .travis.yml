@@ -5,6 +5,7 @@ otp_release:
 
 env:
     - ELIXIR_VERSION=0.14.3
+    - ELIXIR_VERSION=0.15.0
 
 before_install:
     - wget https://github.com/elixir-lang/elixir/releases/download/v$ELIXIR_VERSION/Precompiled.zip
