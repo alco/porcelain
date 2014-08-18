@@ -1,6 +1,12 @@
 Changelog
 =========
 
+## v1.1.3 - Aug 18, 2014
+
+  * Fix issues with sending large inputs. There was a related issue in goon, so
+    you'll need to update it to v1.0.2.
+
+
 ## v1.1.2 - Aug 4, 2014
 
   * support Elixir versions 0.14.3 up to 2.0.0
