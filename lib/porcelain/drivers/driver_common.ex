@@ -62,7 +62,7 @@ defmodule Porcelain.Driver.Common do
   defp send_input(port, input) do
     case input do
       iodata when is_binary(iodata) or is_list(iodata) ->
-        Port.command(port, input)
+        feed_input(port, input)
         send_eof(port)
 
       {:file, fid} ->
@@ -80,13 +80,15 @@ defmodule Porcelain.Driver.Common do
     end
   end
 
-  defp send_eof(port), do: Port.command(port, "")
+  defp send_eof(port) do
+    port_command(port, "")
+  end
 
   # we read files in blocks to avoid excessive memory usage
-  @file_block_size 1024*1024
+  @input_chunk_size 65535
 
   defp pipe_file(fid, port) do
-    Stream.repeatedly(fn -> :file.read(fid, @file_block_size) end)
+    Stream.repeatedly(fn -> :file.read(fid, @input_chunk_size) end)
     |> Stream.take_while(fn
       :eof        -> false
       {:error, _} -> false
@@ -102,16 +104,47 @@ defmodule Porcelain.Driver.Common do
       Enum.each(enum, fn
         iodata when is_list(iodata) or is_binary(iodata) ->
           # the sleep is needed to work around the problem of port hanging
-          :timer.sleep(1)
-          Port.command(port, iodata, [:nosuspend])
+          feed_input(port, iodata)
         byte ->
-          :timer.sleep(1)
-          Port.command(port, [byte])
+          port_command(port, [byte])
       end)
     catch
       :error, :badarg -> nil
     end
     send_eof(port)
+  end
+
+  defp feed_input(port, data) when is_binary(data) do
+    size = byte_size(data)
+    feed_in_chunks(port, data, @input_chunk_size, 0, size)
+  end
+
+  defp feed_input(port, iolist) when is_list(iolist) do
+    for_each(iolist, &feed_input(port, &1))
+  end
+
+  defp feed_input(port, byte) when is_integer(byte) do
+    port_command(port, [byte])
+  end
+
+  defp feed_in_chunks(_port, _data, _chunk_size, data_size, data_size), do: nil
+
+  defp feed_in_chunks(port, data, chunk_size, start, data_size) do
+    size = min(chunk_size, data_size-start)
+    chunk = :binary.part(data, {start, size})
+    port_command(port, chunk)
+    feed_in_chunks(port, data, chunk_size, start+size, data_size)
+  end
+
+  defp for_each([], _fun), do: :ok
+  defp for_each([h|t], fun) do
+    fun.(h)
+    for_each(t, fun)
+  end
+
+  defp port_command(port, data) do
+    Port.command(port, data)
+    #:timer.sleep(1)
   end
 
   ###
@@ -142,7 +175,7 @@ defmodule Porcelain.Driver.Common do
         end
 
       {:input, data} ->
-        Port.command(port, data)
+        feed_input(port, data)
         collect_output(port, output, error, result_opt, port_data_handler)
 
       {:stop, from, ref} ->

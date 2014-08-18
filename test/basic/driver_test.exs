@@ -212,4 +212,19 @@ defmodule PorcelainTest.BasicTest do
     assert exec("grep", ["hi", "-m", "2"], in: input, out: "hello: ")
            == %Result{out: "hello: hi\nhi \n", err: nil, status: 0}
   end
+
+  test "large input" do
+    small_size = 256 * 256
+    large_size = (256 * 256 - 1) * 10
+    small_input = String.duplicate("a", small_size)
+    large_input = String.duplicate("b", large_size)
+
+    assert %Porcelain.Result{out: out, status: 0}
+           = Porcelain.shell("head -c #{small_size} | wc -c", in: small_input)
+    assert String.strip(out) == "#{small_size}"
+
+    assert %Porcelain.Result{out: out, status: 0}
+           = Porcelain.shell("head -c #{large_size} | wc -c", in: large_input)
+    assert String.strip(out) == "#{large_size}"
+  end
 end

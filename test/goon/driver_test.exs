@@ -183,4 +183,20 @@ defmodule PorcelainTest.GoonTest do
              == %Result{out: nil, err: stream, status: 0}
     end) == "a\nb\nc\nd\ng\nz\n"
   end
+
+  test "large input" do
+    # the input should be largen than what can fit in a packet preceded with
+    # 2-byte length
+    small_size = 256 * 256             # 2 packets
+    large_size = (256 * 256 - 1) * 10  # 10 packets
+    small_input = String.duplicate("a", small_size)
+    large_input = String.duplicate("b", large_size)
+
+    assert %Porcelain.Result{out: out, status: 0}
+           = Porcelain.exec("wc", ["-c"], in: small_input)
+    assert String.strip(out) == "#{small_size}"
+    assert %Porcelain.Result{out: out, status: 0}
+           = Porcelain.exec("wc", ["-c"], in: large_input)
+    assert String.strip(out) == "#{large_size}"
+  end
 end
