@@ -2,6 +2,8 @@ Porcelain
 =========
 
 [![Build status](https://travis-ci.org/alco/porcelain.svg "Build status")](https://travis-ci.org/alco/porcelain)
+[![Hex version](https://img.shields.io/hexpm/v/porcelain.svg "Hex version")](https://hex.pm/packages/porcelain)
+![Hex downloads](https://img.shields.io/hexpm/dt/porcelain.svg "Hex downloads")
 
 Porcelain implements a saner approach to launching and communicating with
 external OS processes from Elixir. Built on top of Erlang's ports, it provides
@@ -47,7 +49,7 @@ def application do
 end
 
 defp deps do
-  [{:porcelain, "~> 1.0.0"}]
+  [{:porcelain, "~> 1.0"}]
 end
 ```
 
