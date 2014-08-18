@@ -114,16 +114,25 @@ defmodule Porcelain.Driver.Common do
     send_eof(port)
   end
 
-  defp feed_input(port, data) when is_binary(data) do
+  # Separate clause to catch the empty binary
+  defp feed_input(port, iodata) do
+    if :erlang.iolist_size(iodata) == 0 do
+      send_eof(port)
+    else
+      do_feed_input(port, iodata)
+    end
+  end
+
+  defp do_feed_input(port, data) when is_binary(data) do
     size = byte_size(data)
     feed_in_chunks(port, data, @input_chunk_size, 0, size)
   end
 
-  defp feed_input(port, iolist) when is_list(iolist) do
-    for_each(iolist, &feed_input(port, &1))
+  defp do_feed_input(port, iolist) when is_list(iolist) do
+    for_each(iolist, &do_feed_input(port, &1))
   end
 
-  defp feed_input(port, byte) when is_integer(byte) do
+  defp do_feed_input(port, byte) when is_integer(byte) do
     port_command(port, [byte])
   end
 
@@ -131,7 +140,7 @@ defmodule Porcelain.Driver.Common do
 
   defp feed_in_chunks(port, data, chunk_size, start, data_size) do
     size = min(chunk_size, data_size-start)
-    chunk = :binary.part(data, {start, size})
+    chunk = :binary.part(data, start, size)
     port_command(port, chunk)
     feed_in_chunks(port, data, chunk_size, start+size, data_size)
   end
