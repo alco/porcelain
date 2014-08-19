@@ -238,6 +238,15 @@ provided functions and supported options.
     release
 
 
+## Acknowledgements
+
+Huge thanks to all who have been test-driving the library in production, in
+particular to
+
+  * Josh Adams
+  * Tim Ruffles
+
+
 ## License
 
 This software is licensed under [the MIT license](LICENSE).
