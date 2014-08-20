@@ -49,7 +49,7 @@ def application do
 end
 
 defp deps do
-  [{:porcelain, "~> 1.0"}]
+  [{:porcelain, "~> 2.0"}]
 end
 ```
 

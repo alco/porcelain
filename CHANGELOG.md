@@ -1,6 +1,20 @@
 Changelog
 =========
 
+## v2.0.0 - Aug 20, 2014
+
+  * Fix a mistake in the message format used for sending output from the
+    external process. The old format was
+
+        {<pid>, :data, <data>}
+
+    the new format is
+
+        {<pid>, :data, :out | :err, <data>}
+
+  * Add support for sending OS signals to external processes
+
+
 ## v1.1.3 - Aug 18, 2014
 
   * Fix issues with sending large inputs. There was a related issue in goon, so
