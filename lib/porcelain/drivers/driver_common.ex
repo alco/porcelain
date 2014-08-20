@@ -59,120 +59,77 @@ defmodule Porcelain.Driver.Common do
 
   ###
 
-  defp send_input(port, input) do
+  defp send_input(port, input, input_handler) do
     case input do
       iodata when is_binary(iodata) or is_list(iodata) ->
-        feed_input(port, input)
-        send_eof(port)
+        input_handler.(port, [input, :eof])
 
       {:file, fid} ->
-        pipe_file(fid, port)
+        pipe_file(fid, port, input_handler)
 
       {:path, path} ->
         File.open(path, [:read], fn(fid) ->
-          pipe_file(fid, port)
+          pipe_file(fid, port, input_handler)
         end)
 
       null when null in [nil, :receive] ->
         nil
 
-      other -> stream_to_port(other, port)
+      other -> stream_to_port(other, port, input_handler)
     end
   end
 
-  defp send_eof(port) do
-    port_command(port, "")
-  end
+  @file_chunk_size 128 * 1024
 
-  # we read files in blocks to avoid excessive memory usage
-  @input_chunk_size 65535
-
-  defp pipe_file(fid, port) do
-    Stream.repeatedly(fn -> :file.read(fid, @input_chunk_size) end)
+  defp pipe_file(fid, port, input_handler) do
+    # we read files in blocks to avoid excessive memory usage
+    Stream.repeatedly(fn -> :file.read(fid, @file_chunk_size) end)
     |> Stream.take_while(fn
       :eof        -> false
       {:error, _} -> false
       _           -> true
     end)
     |> Stream.map(fn {:ok, data} -> data end)
-    |> stream_to_port(port)
+    |> stream_to_port(port, input_handler)
   end
 
-  defp stream_to_port(enum, port) do
+  defp stream_to_port(enum, port, input_handler) do
     # set up a try block, because the port may close before consuming all input
     try do
       Enum.each(enum, fn
         iodata when is_list(iodata) or is_binary(iodata) ->
           # the sleep is needed to work around the problem of port hanging
-          feed_input(port, iodata)
+          input_handler.(port, iodata)
         byte ->
-          port_command(port, [byte])
+          input_handler.(port, [byte])
       end)
     catch
       :error, :badarg -> nil
     end
-    send_eof(port)
+    input_handler.(port, :eof)
   end
 
-  # Separate clause to catch the empty binary
-  defp feed_input(port, iodata) do
-    if :erlang.iolist_size(iodata) == 0 do
-      send_eof(port)
-    else
-      do_feed_input(port, iodata)
-    end
-  end
-
-  defp do_feed_input(port, data) when is_binary(data) do
-    size = byte_size(data)
-    feed_in_chunks(port, data, @input_chunk_size, 0, size)
-  end
-
-  defp do_feed_input(port, iolist) when is_list(iolist) do
-    for_each(iolist, &do_feed_input(port, &1))
-  end
-
-  defp do_feed_input(port, byte) when is_integer(byte) do
-    port_command(port, [byte])
-  end
-
-  defp feed_in_chunks(_port, _data, _chunk_size, data_size, data_size), do: nil
-
-  defp feed_in_chunks(port, data, chunk_size, start, data_size) do
-    size = min(chunk_size, data_size-start)
-    chunk = :binary.part(data, start, size)
-    port_command(port, chunk)
-    feed_in_chunks(port, data, chunk_size, start+size, data_size)
-  end
-
-  defp for_each([], _fun), do: :ok
-  defp for_each([h|t], fun) do
-    fun.(h)
-    for_each(t, fun)
-  end
-
-  defp port_command(port, data) do
-    Port.command(port, data)
-    #:timer.sleep(1)
+  defp send_signal(_port, _signal) do
+    #driver.send_signal(port, signal)
   end
 
   ###
 
-  def communicate(port, input, output, error, data_handler, opts) do
-    input_fun = fn -> send_input(port, input) end
+  def communicate(port, input, output, error, {_, port_input_handler}=handlers, opts) do
+    input_fun = fn -> send_input(port, input, port_input_handler) end
     if opts[:async_input] do
       spawn(input_fun)
     else
       input_fun.()
     end
-    collect_output(port, output, error, opts[:result], data_handler)
+    collect_output(port, output, error, opts[:result], handlers)
   end
 
-  defp collect_output(port, output, error, result_opt, port_data_handler) do
+  defp collect_output(port, output, error, result_opt, {port_data_handler, port_input_handler}=handlers) do
     receive do
       { ^port, {:data, data} } ->
         {output, error} = port_data_handler.(data, output, error)
-        collect_output(port, output, error, result_opt, port_data_handler)
+        collect_output(port, output, error, result_opt, handlers)
 
       { ^port, {:exit_status, status} } ->
         result = finalize_result(status, output, error)
@@ -184,8 +141,12 @@ defmodule Porcelain.Driver.Common do
         end
 
       {:input, data} ->
-        feed_input(port, data)
-        collect_output(port, output, error, result_opt, port_data_handler)
+        port_input_handler.(port, data)
+        collect_output(port, output, error, result_opt, handlers)
+
+      {:signal, sig} ->
+        send_signal(port, sig)
+        collect_output(port, output, error, result_opt, handlers)
 
       {:stop, from, ref} ->
         Port.close(port)

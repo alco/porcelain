@@ -52,7 +52,7 @@ defmodule Porcelain.Driver.Basic do
     opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
     port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-    Common.communicate(port, opts[:in], opts[:out], opts[:err], &process_data/3,
+    Common.communicate(port, opts[:in], opts[:out], opts[:err], {&process_data/3, &feed_input/2},
         async_input: opts[:async_in])
   end
 
@@ -75,7 +75,7 @@ defmodule Porcelain.Driver.Basic do
 
     pid = spawn(fn ->
       port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-      Common.communicate(port, opts[:in], out_opt, opts[:err], &process_data/3,
+      Common.communicate(port, opts[:in], out_opt, opts[:err], {&process_data/3, &feed_input/2},
           async_input: true, result: opts[:result])
     end)
 
@@ -124,6 +124,27 @@ defmodule Porcelain.Driver.Basic do
   end
 
   ###
+
+  defp feed_input(port, iodata) when is_list(iodata) do
+    # we deconstruct the list here to avoid recursive calls in do_feed_input
+    Enum.each(iodata, &do_feed_input(port, &1))
+  end
+
+  defp feed_input(port, iodata) do
+    do_feed_input(port, iodata)
+  end
+
+  defp do_feed_input(_port, :eof) do
+    # basic driver does not support handling EOF
+  end
+
+  defp do_feed_input(port, byte) when is_integer(byte) do
+    Port.command(port, [byte])
+  end
+
+  defp do_feed_input(port, data) do
+    Port.command(port, data)
+  end
 
   defp process_data(data, output, error) do
     {Common.process_port_output(output, data), error}

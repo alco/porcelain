@@ -49,7 +49,7 @@ defmodule Porcelain.Driver.Goon do
     opts = Common.compile_options(opts)
     exe = find_executable(prog, opts, shell_flag)
     port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-    Common.communicate(port, opts[:in], opts[:out], opts[:err], &process_data/3,
+    Common.communicate(port, opts[:in], opts[:out], opts[:err], {&process_data/3, &feed_input/2},
         async_input: opts[:async_in])
   end
 
@@ -72,7 +72,7 @@ defmodule Porcelain.Driver.Goon do
 
     pid = spawn(fn ->
       port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-      Common.communicate(port, opts[:in], out_opt, opts[:err], &process_data/3,
+      Common.communicate(port, opts[:in], out_opt, opts[:err], {&process_data/3, &feed_input/2},
           async_input: true, result: opts[:result])
     end)
 
@@ -145,6 +145,61 @@ defmodule Porcelain.Driver.Goon do
 
   defp process_data(<<0x1>> <> data, output, error) do
     {output, Common.process_port_output(error, data)}
+  end
+
+  # Maximum chunk size to fit in a single packet. One byte is used as a marker
+  # in the Goex protocol v2.0.
+  @input_chunk_size 65535#-1
+
+  # EOF from user code
+  defp feed_input(port, "") do
+    send_eof(port)
+  end
+
+  defp feed_input(port, iodata) do
+    do_feed_input(port, iodata)
+  end
+
+  # EOF internal EOF marker
+  defp do_feed_input(port, :eof) do
+    send_eof(port)
+  end
+
+  defp do_feed_input(port, data) when is_binary(data) do
+    size = byte_size(data)
+    feed_in_chunks(port, data, @input_chunk_size, 0, size)
+  end
+
+  defp do_feed_input(port, iolist) when is_list(iolist) do
+    for_each(iolist, &do_feed_input(port, &1))
+  end
+
+  defp do_feed_input(port, byte) when is_integer(byte) do
+    port_command(port, [byte])
+  end
+
+  defp feed_in_chunks(_port, _data, _chunk_size, data_size, data_size), do: nil
+
+  defp feed_in_chunks(port, data, chunk_size, start, data_size) do
+    size = min(chunk_size, data_size-start)
+    chunk = :binary.part(data, start, size)
+    port_command(port, chunk)
+    feed_in_chunks(port, data, chunk_size, start+size, data_size)
+  end
+
+  defp for_each([], _fun), do: :ok
+  defp for_each([h|t], fun) do
+    fun.(h)
+    for_each(t, fun)
+  end
+
+  defp port_command(port, data) do
+    Port.command(port, data)
+    #:timer.sleep(1)
+  end
+
+  defp send_eof(port) do
+    Port.command(port, [])
   end
 
   ###
