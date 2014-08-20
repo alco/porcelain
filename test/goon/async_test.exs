@@ -136,6 +136,8 @@ defmodule PorcelainTest.GoonAsyncTest do
     Proc.send_input(proc, "foo\n")
     Proc.send_input(proc, "")
 
+    :timer.sleep(100)
+
     proc_pid = proc.pid
     assert_receive {^proc_pid, :data, :out, "foo\n"}
     assert_receive {^proc_pid, :data, :err, "error detected\n"}
