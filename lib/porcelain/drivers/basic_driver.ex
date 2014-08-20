@@ -147,6 +147,6 @@ defmodule Porcelain.Driver.Basic do
   end
 
   defp process_data(data, output, error) do
-    {Common.process_port_output(output, data), error}
+    {Common.process_port_output(output, data, :out), error}
   end
 end

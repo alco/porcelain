@@ -140,11 +140,11 @@ defmodule Porcelain.Driver.Goon do
   ###
 
   defp process_data(<<0x0>> <> data, output, error) do
-    {Common.process_port_output(output, data), error}
+    {Common.process_port_output(output, data, :out), error}
   end
 
   defp process_data(<<0x1>> <> data, output, error) do
-    {output, Common.process_port_output(error, data)}
+    {output, Common.process_port_output(error, data, :err)}
   end
 
   # Maximum chunk size to fit in a single packet. One byte is used as a marker

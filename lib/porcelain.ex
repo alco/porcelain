@@ -127,7 +127,7 @@ defmodule Porcelain do
   def exec(prog, args, options \\ [])
         when is_binary(prog) and is_list(args) and is_list(options)
   do
-    catch_wrapper fn ->
+    catch_throws fn ->
       driver().exec(prog, args, compile_exec_options(options))
     end
   end
@@ -147,7 +147,7 @@ defmodule Porcelain do
   @spec shell(binary, Keyword.t) :: Porcelain.Result.t
 
   def shell(cmd, options \\ []) when is_binary(cmd) and is_list(options) do
-    catch_wrapper fn ->
+    catch_throws fn ->
       driver().exec_shell(cmd, compile_exec_options(options))
     end
   end
@@ -197,6 +197,9 @@ defmodule Porcelain do
           The result will be `nil` if the `:result` option that is passed to
           this function is set to `:discard`.
 
+          **Note**: if both `:out` and `:err` are set up to send to the same
+          pid, only one result message will be sent to that pid in the end.
+
     * `:result` – specify how the result of the external program should be
     returned after it has terminated.
 
@@ -221,7 +224,7 @@ defmodule Porcelain do
   def spawn(prog, args, options \\ [])
     when is_binary(prog) and is_list(args) and is_list(options)
   do
-    catch_wrapper fn ->
+    catch_throws fn ->
       driver().spawn(prog, args, compile_spawn_options(options))
     end
   end
@@ -238,7 +241,7 @@ defmodule Porcelain do
   def spawn_shell(cmd, options \\ [])
         when is_binary(cmd) and is_list(options)
   do
-    catch_wrapper fn ->
+    catch_throws fn ->
       driver().spawn_shell(cmd, compile_spawn_options(options))
     end
   end
@@ -265,7 +268,7 @@ defmodule Porcelain do
 
   ###
 
-  defp catch_wrapper(fun) do
+  defp catch_throws(fun) do
     try do
       fun.()
     catch
@@ -324,6 +327,8 @@ defmodule Porcelain do
       {:out, {:send, pid}} when is_pid(pid) ->
         :ok
       {:err, :stream}     -> :ok
+      {:err, {:send, pid}} when is_pid(pid) ->
+        :ok
       {:result, :keep}    -> :ok
       {:result, :discard} -> :ok
       _ -> nil

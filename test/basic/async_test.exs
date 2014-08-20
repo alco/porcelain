@@ -18,7 +18,7 @@ defmodule PorcelainTest.BasicAsyncTest do
     :timer.sleep(100)
 
     assert Proc.alive?(proc)
-    result = Proc.await(proc)
+    {:ok, result} = Proc.await(proc)
     refute Proc.alive?(proc)
     assert %Result{status: 0, out: "mult\nline\nof i\n", err: nil} = result
   end
@@ -82,13 +82,13 @@ defmodule PorcelainTest.BasicAsyncTest do
     refute_receive _
 
     Proc.send_input(proc, "\n")
-    assert_receive {^proc_pid, :data, ":mark:\n"}
+    assert_receive {^proc_pid, :data, :out, ":mark:\n"}
 
     Proc.send_input(proc, "ignore me\n")
     refute_receive _
 
     Proc.send_input(proc, "123 :mark:\n")
-    assert_receive {^proc_pid, :data, "123 :mark:\n"}
+    assert_receive {^proc_pid, :data, :out, "123 :mark:\n"}
     assert_receive {^proc_pid, :result,
                       %Result{status: 0, out: {:send, ^self_pid}, err: nil}}
     refute Proc.alive?(proc)
@@ -105,7 +105,7 @@ defmodule PorcelainTest.BasicAsyncTest do
     refute_receive _
 
     Proc.send_input(proc, "\n-")
-    assert_receive {^proc_pid, :data, "-:mark:-\n"}
+    assert_receive {^proc_pid, :data, :out, "-:mark:-\n"}
     assert_receive {^proc_pid, :result, nil}
     refute Proc.alive?(proc)
   end

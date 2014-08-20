@@ -133,7 +133,7 @@ defmodule Porcelain.Driver.Common do
 
       { ^port, {:exit_status, status} } ->
         result = finalize_result(status, output, error)
-        send_result(output, result_opt, result)
+        send_result(output, error, result_opt, result)
         || case result_opt do
           nil      -> result
           :discard -> nil
@@ -151,7 +151,7 @@ defmodule Porcelain.Driver.Common do
       {:stop, from, ref} ->
         Port.close(port)
         result = finalize_result(nil, output, error)
-        send_result(output, result_opt, result)
+        send_result(output, error, result_opt, result)
         send(from, {ref, :stopped})
     end
   end
@@ -162,13 +162,31 @@ defmodule Porcelain.Driver.Common do
     %Porcelain.Result{status: status, out: flatten(out), err: flatten(err)}
   end
 
-  defp send_result({:send, pid}, opt, result) do
+  defp send_result(out, err, opt, result) do
     if opt == :discard, do: result = nil
-    send(pid, {self(), :result, result})
-    true
-  end
+    msg = {self(), :result, result}
 
-  defp send_result(_, _, _), do: false
+    out_ret = case out do
+      {:send, pid} ->
+        send(pid, msg)
+        true
+
+      _ -> false
+    end
+
+    err_ret = case {err, out} do
+      {{:send, pid}, {:send, pid}} ->
+        true
+
+      {{:send, pid}, _} ->
+        send(pid, msg)
+        true
+
+      _ -> false
+    end
+
+    out_ret or err_ret
+  end
 
   defp wait_for_command(result) do
     receive do
@@ -181,59 +199,59 @@ defmodule Porcelain.Driver.Common do
 
   ###
 
-  def process_port_output(nil, _) do
+  def process_port_output(nil, _, _) do
     nil
   end
 
-  def process_port_output({typ, data}, new_data)
+  def process_port_output({typ, data}, new_data, _iostream)
     when typ in [:string, :iodata]
   do
     {typ, [data, new_data]}
   end
 
-  def process_port_output({:file, fid}=x, data) do
+  def process_port_output({:file, fid}=x, data, _iostream) do
     :ok = :file.write(fid, data)
     x
   end
 
-  def process_port_output({:path, path}, data) do
+  def process_port_output({:path, path}, data, iostream) do
     {:ok, fid} = File.open(path, [:write])
-    process_port_output({:path, path, fid}, data)
+    process_port_output({:path, path, fid}, data, iostream)
   end
 
-  def process_port_output({:append, path}, data) do
+  def process_port_output({:append, path}, data, iostream) do
     {:ok, fid} = File.open(path, [:append])
-    process_port_output({:path, path, fid}, data)
+    process_port_output({:path, path, fid}, data, iostream)
   end
 
-  def process_port_output({:path, _, fid}=x, data) do
+  def process_port_output({:path, _, fid}=x, data, _iostream) do
     :ok = IO.write(fid, data)
     x
   end
 
-  def process_port_output({:stream, server}=x, data) do
+  def process_port_output({:stream, server}=x, data, _iostream) do
     StreamServer.put_data(server, data)
     x
   end
 
-  def process_port_output({:send, pid}=x, data) do
-    send(pid, {self(), :data, data})
+  def process_port_output({:send, pid}=x, data, iostream) do
+    send(pid, {self(), :data, iostream, data})
     x
   end
 
-  def process_port_output({:into, _, server}=x, data) do
+  def process_port_output({:into, _, server}=x, data, _iostream) do
     StreamServer.put_data(server, data)
     x
   end
 
-  def process_port_output(coll, data) do
+  def process_port_output(coll, data, iostream) do
     {:ok, server} = StreamServer.start()
     parent = self()
     spawn(fn ->
       ret = Enum.into(Stream.unfold(server, &read_stream/1), coll)
       send(parent, {:into, ret, server})
     end)
-    process_port_output({:into, coll, server}, data)
+    process_port_output({:into, coll, server}, data, iostream)
   end
 
   defp flatten(thing) do

@@ -18,7 +18,7 @@ defmodule PorcelainTest.GoonAsyncTest do
     :timer.sleep(100)
 
     assert Proc.alive?(proc)
-    result = Proc.await(proc)
+    {:ok, result} = Proc.await(proc)
     refute Proc.alive?(proc)
     assert %Result{status: 0, out: "mult\nline\nof i\n", err: nil} = result
   end
@@ -81,13 +81,13 @@ defmodule PorcelainTest.GoonAsyncTest do
     refute_receive _
 
     Proc.send_input(proc, "\n")
-    assert_receive {^proc_pid, :data, ":mark:\n"}
+    assert_receive {^proc_pid, :data, :out, ":mark:\n"}
 
     Proc.send_input(proc, "ignore me\n")
     refute_receive _
 
     Proc.send_input(proc, "123 :mark:\n")
-    assert_receive {^proc_pid, :data, "123 :mark:\n"}
+    assert_receive {^proc_pid, :data, :out, "123 :mark:\n"}
 
     refute_receive {^proc_pid, :result, _}
 
@@ -98,18 +98,49 @@ defmodule PorcelainTest.GoonAsyncTest do
   end
 
   test "spawn message passing no result" do
-    self_pid = self()
     proc = Porcelain.spawn("grep", [":mark:", "--line-buffered"],
-                       in: :receive, out: {:send, self_pid}, result: :discard)
+                       in: :receive, out: {:send, self()}, result: :discard)
     proc_pid = proc.pid
 
     Proc.send_input(proc, "-:mark:-")
     refute_receive _
 
     Proc.send_input(proc, "\n-")
-    assert_receive {^proc_pid, :data, "-:mark:-\n"}
+    assert_receive {^proc_pid, :data, :out, "-:mark:-\n"}
     Proc.send_input(proc, "")
     assert_receive {^proc_pid, :result, nil}
+    refute_receive _
+    refute Proc.alive?(proc)
+  end
+
+  @tag :posix
+  test "spawn shell message passing stderr" do
+    proc = Porcelain.spawn_shell("grep foo 1>&2", in: :receive,
+                                      err: {:send, self()}, result: :discard)
+    Proc.send_input(proc, "foo\nbar\n")
+    Proc.send_input(proc, "")
+
+    proc_pid = proc.pid
+    assert_receive {^proc_pid, :data, :err, "foo\n"}
+    assert_receive {^proc_pid, :result, nil}
+    refute_receive _
+    refute Proc.alive?(proc)
+  end
+
+  @tag :posix
+  test "message passing single result" do
+    proc = Porcelain.spawn("awk",
+      [~s({print$0}END{print "error detected" | "cat 1>&2"})],
+      in: :receive, out: {:send, self()}, err: {:send, self()}, result: :discard)
+
+    Proc.send_input(proc, "foo\n")
+    Proc.send_input(proc, "")
+
+    proc_pid = proc.pid
+    assert_receive {^proc_pid, :data, :out, "foo\n"}
+    assert_receive {^proc_pid, :data, :err, "error detected\n"}
+    assert_receive {^proc_pid, :result, nil}
+    refute_receive _
     refute Proc.alive?(proc)
   end
 

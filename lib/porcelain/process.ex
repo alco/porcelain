@@ -40,7 +40,7 @@ defmodule Porcelain.Process do
   If timeout value is specified and the external process fails to terminate
   before it runs out, atom `:timeout` is returned.
   """
-  @spec await(t, non_neg_integer | :infinity) :: Porcelain.Result.t
+  @spec await(t, non_neg_integer | :infinity) :: {:ok, Porcelain.Result.t} | {:error, :noproc | :timeout}
 
   def await(%P{pid: pid}, timeout \\ :infinity) do
     mon = Process.monitor(pid)
@@ -49,11 +49,11 @@ defmodule Porcelain.Process do
     receive do
       {^ref, result} ->
         Process.demonitor(mon, [:flush])
-        result
+        {:ok, result}
       {:DOWN, ^mon, _, _, _info} -> {:error, :noproc}
     after timeout ->
       Process.demonitor(mon, [:flush])
-      :timeout
+      {:error, :timeout}
     end
   end
 
