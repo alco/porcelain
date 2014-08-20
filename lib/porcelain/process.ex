@@ -13,7 +13,7 @@ defmodule Porcelain.Process do
   defstruct [:pid, :out, :err]
 
   @type t :: %__MODULE__{}
-  @typep signal :: :int | :kill | non_neg_integer
+  @type signal :: :int | :kill | non_neg_integer
 
 
   @doc """
