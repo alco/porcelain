@@ -12,7 +12,7 @@ defmodule Porcelain.Driver.Goon do
   The additional functionality provided by this driver is as follows:
 
     * ability to signal EOF to the external program
-    * (to be implemented) send an OS signal to the program
+    * send an OS signal to the program
     * (to be implemented) more efficient piping of multiple programs
 
   """

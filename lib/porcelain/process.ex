@@ -104,6 +104,9 @@ defmodule Porcelain.Process do
 
   @doc """
   Send an OS signal to the processes.
+
+  No further communication with the process is possible after sending it a
+  signal.
   """
   @spec signal(t, signal) :: signal
 

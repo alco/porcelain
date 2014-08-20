@@ -31,7 +31,7 @@ User-level features include:
   * being able to work with programs that try to read the whole input until EOF
     before producing output
 
-  * (_to be implemented_) ability to send OS signals to external processes
+  * ability to send OS signals to external processes (requires goon v2.0)
 
 To read background story on the library's design and possible future
 extensions, please refer to the [wiki][].
@@ -234,8 +234,6 @@ provided functions and supported options.
 
   * there are known crashes happening when using Porcelain across two nodes
   * error handling when using the Goon driver is not completely shaped out
-  * the support for OS signals is planned to be included in a later release
-    release
 
 
 ## Acknowledgements
