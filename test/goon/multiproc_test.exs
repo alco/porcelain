@@ -38,6 +38,8 @@ defmodule PorcelainTest.MultiprocTest do
 
     Enum.each(filters, fn {proc, _} -> Proc.send_input(proc, "") end)
 
+    :timer.sleep(100)
+
     assert_receive {^filter_s, "squeak\nsponge\nsilly\n"}
     assert_receive {^filter_i, "silly\nelixir\n"}
     assert_receive {^filter_go, "にほんごがすきです\n"}
