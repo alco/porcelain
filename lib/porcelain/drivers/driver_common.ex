@@ -109,13 +109,9 @@ defmodule Porcelain.Driver.Common do
     input_handler.(port, :eof)
   end
 
-  defp send_signal(_port, _signal) do
-    #driver.send_signal(port, signal)
-  end
-
   ###
 
-  def communicate(port, input, output, error, {_, port_input_handler}=handlers, opts) do
+  def communicate(port, input, output, error, {_, port_input_handler, _}=handlers, opts) do
     input_fun = fn -> send_input(port, input, port_input_handler) end
     if opts[:async_input] do
       spawn(input_fun)
@@ -125,7 +121,7 @@ defmodule Porcelain.Driver.Common do
     collect_output(port, output, error, opts[:result], handlers)
   end
 
-  defp collect_output(port, output, error, result_opt, {port_data_handler, port_input_handler}=handlers) do
+  defp collect_output(port, output, error, result_opt, {port_data_handler, port_input_handler, port_signal_handler}=handlers) do
     receive do
       { ^port, {:data, data} } ->
         {output, error} = port_data_handler.(data, output, error)
@@ -145,8 +141,15 @@ defmodule Porcelain.Driver.Common do
         collect_output(port, output, error, result_opt, handlers)
 
       {:signal, sig} ->
-        send_signal(port, sig)
+        port_signal_handler.(port, sig)
         collect_output(port, output, error, result_opt, handlers)
+
+        #      {:get_os_pid, from, ref} ->
+        #        case :erlang.port_info(port, :os_pid) do
+        #          {:os_pid, :undefined} -> send(from, {ref, nil})
+        #          {:os_pid, os_pid} -> send(from, {ref, os_pid})
+        #          :undefined -> send(from, {ref, nil})
+        #        end
 
       {:stop, from, ref} ->
         Port.close(port)

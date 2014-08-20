@@ -49,7 +49,7 @@ defmodule Porcelain.Driver.Goon do
     opts = Common.compile_options(opts)
     exe = find_executable(prog, opts, shell_flag)
     port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-    Common.communicate(port, opts[:in], opts[:out], opts[:err], {&process_data/3, &feed_input/2},
+    Common.communicate(port, opts[:in], opts[:out], opts[:err], {&process_data/3, &feed_input/2, &send_signal/2},
         async_input: opts[:async_in])
   end
 
@@ -72,7 +72,7 @@ defmodule Porcelain.Driver.Goon do
 
     pid = spawn(fn ->
       port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-      Common.communicate(port, opts[:in], out_opt, opts[:err], {&process_data/3, &feed_input/2},
+      Common.communicate(port, opts[:in], out_opt, opts[:err], {&process_data/3, &feed_input/2, &send_signal/2},
           async_input: true, result: opts[:result])
     end)
 
@@ -84,7 +84,7 @@ defmodule Porcelain.Driver.Goon do
   end
 
 
-  @proto_version "1.0"
+  @proto_version "2.0"
 
   @doc false
   defp find_executable(prog, _, :noshell) do
@@ -149,7 +149,7 @@ defmodule Porcelain.Driver.Goon do
 
   # Maximum chunk size to fit in a single packet. One byte is used as a marker
   # in the Goex protocol v2.0.
-  @input_chunk_size 65535#-1
+  @input_chunk_size 65535-1
 
   # EOF from user code
   defp feed_input(port, "") do
@@ -194,12 +194,24 @@ defmodule Porcelain.Driver.Goon do
   end
 
   defp port_command(port, data) do
-    Port.command(port, data)
+    Port.command(port, [0,data])
     #:timer.sleep(1)
   end
 
   defp send_eof(port) do
     Port.command(port, [])
+  end
+
+  defp send_signal(port, :int) do
+    Port.command(port, [1,128])
+  end
+
+  defp send_signal(port, :kill) do
+    Port.command(port, [1,129])
+  end
+
+  defp send_signal(port, sig) when is_integer(sig) do
+    Port.command(port, [1,sig])
   end
 
   ###

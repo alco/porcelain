@@ -52,7 +52,7 @@ defmodule Porcelain.Driver.Basic do
     opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
     port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-    Common.communicate(port, opts[:in], opts[:out], opts[:err], {&process_data/3, &feed_input/2},
+    Common.communicate(port, opts[:in], opts[:out], opts[:err], {&process_data/3, &feed_input/2, &send_signal/2},
         async_input: opts[:async_in])
   end
 
@@ -75,7 +75,7 @@ defmodule Porcelain.Driver.Basic do
 
     pid = spawn(fn ->
       port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-      Common.communicate(port, opts[:in], out_opt, opts[:err], {&process_data/3, &feed_input/2},
+      Common.communicate(port, opts[:in], out_opt, opts[:err], {&process_data/3, &feed_input/2, &send_signal/2},
           async_input: true, result: opts[:result])
     end)
 
@@ -144,6 +144,10 @@ defmodule Porcelain.Driver.Basic do
 
   defp do_feed_input(port, data) do
     Port.command(port, data)
+  end
+
+  defp send_signal(_port, _sig) do
+    # basic driver does not support signals
   end
 
   defp process_data(data, output, error) do
