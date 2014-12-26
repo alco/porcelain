@@ -13,46 +13,43 @@ defmodule Porcelain.Init do
     ])
   end
 
-  defp ok_pipe([h|t]) do
-    case h.() do
-      {:error, _}=error -> error
-      :ok -> ok_pipe(t)
-    end
-  end
-
-  defp ok_pipe([]), do: :ok
-
+  # The user hasn't specified the required driver. We are free to choose the most appropriate one.
   def init(nil) do
-    if path=find_goon() do
-      if Goon.check_goon_version(path) do
+    # We check if goon is available first because it is the preferred way to interact with
+    # external processes
+    case init_goon_driver() do
+      {:ok, path} ->
         set_driver(Goon, path)
-      else
-        msg = "[Porcelain]: goon executable at #{path} does not support "
-          <> "protocol version #{Goon.proto_version}\n"
-          <> "[Porcelain]: falling back to the basic driver\n"
-        IO.write :stderr, msg
+
+      {:error, error} ->
+        log_warning error
+        log_string "falling back to the basic driver"
         set_driver(Basic)
-      end
-    else
-      msg = """
-      [Porcelain]: goon executable not found
-      [Porcelain]: falling back to the basic driver
-      """
-      IO.puts :stderr, msg
-      set_driver(Basic)
     end
   end
 
+  # The user asks to use goon specifically. We will fail if it can't be initialized.
   def init(Goon) do
-    if path=find_goon() do
-      set_driver(Goon, path)
-    else
-      {:error, "goon executable not found"}
+    case init_goon_driver() do
+      {:ok, path}     -> set_driver(Goon, path)
+      {:error, error} -> {:error, error_string(error)}
     end
   end
 
   def init(mod) when is_atom(mod), do: set_driver(mod)
 
+
+  defp init_goon_driver() do
+    if path = find_goon() do
+      if Goon.check_goon_version(path) do
+        {:ok, path}
+      else
+        {:error, {:goon_bad_version, path}}
+      end
+    else
+      {:error, :goon_not_found}
+    end
+  end
 
   defp init_shell() do
     # Finding shell command logic from :os.cmd in OTP
@@ -79,9 +76,11 @@ defmodule Porcelain.Init do
     end
   end
 
+  # this function has to return :ok
   defp set_driver(mod, state \\ nil) do
-    set_env(:driver_internal, mod)
-    set_env(:driver_state, state)
+    :ok = set_env(:driver_internal, mod)
+    :ok = set_env(:driver_state, state)
+    :ok
   end
 
   defp set_env(key, term) do
@@ -98,5 +97,30 @@ defmodule Porcelain.Init do
         List.to_string(exe)
       true -> false
     end
+  end
+
+  defp ok_pipe([h|t]) do
+    case h.() do
+      {:error, _}=error -> error
+      :ok -> ok_pipe(t)
+    end
+  end
+
+  defp ok_pipe([]), do: :ok
+
+  defp error_string({:goon_bad_version, path}) do
+    "goon executable at #{path} does not support protocol version #{Goon.proto_version}"
+  end
+
+  defp error_string(:goon_not_found) do
+    "goon executable not found"
+  end
+
+  defp log_warning(error) do
+    error |> error_string() |> log_string()
+  end
+
+  defp log_string(msg) do
+    IO.puts :stderr, ["[Porcelain]: ", msg]
   end
 end
