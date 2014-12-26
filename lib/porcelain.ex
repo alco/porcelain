@@ -411,8 +411,12 @@ defmodule Porcelain do
 
 
   defp driver() do
-    {:ok, mod} = :application.get_env(:porcelain, :driver_internal)
-    mod
+    case :application.get_env(:porcelain, :driver_internal) do
+      {:ok, mod} -> mod
+      _ ->
+        raise Porcelain.UsageError, message: "Looks like the :porcelain app is not running. " <>
+          "Make sure you've added :porcelain to the list of applications in your mix.exs."
+    end
   end
 
 
