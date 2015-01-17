@@ -152,6 +152,11 @@ defmodule Porcelain.Driver.Common do
         #        end
 
       {:stop, from, ref} ->
+        # force kill before close port
+        case :erlang.port_info(port, :os_pid) do
+          {:os_pid, os_pid} -> System.cmd("kill", ["#{os_pid}"])
+        end
+        
         Port.close(port)
         result = finalize_result(nil, output, error)
         send_result(output, error, result_opt, result)
