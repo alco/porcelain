@@ -170,14 +170,14 @@ proc = %Proc{pid: pid} =
 
 Proc.send_input(proc, "ohai proc\n")
 receive do
-  {^pid, :data, data} -> IO.inspect data   #=> "ohai proc\n"
+  {^pid, :data, :out, data} -> IO.inspect data   #=> "ohai proc\n"
 end
 
 Proc.send_input(proc, "this won't match\n")
 Proc.send_input(proc, "ohai")
 Proc.send_input(proc, "\n")
 receive do
-  {^pid, :data, data} -> IO.inspect data   #=> "ohai\n"
+  {^pid, :data, :out, data} -> IO.inspect data   #=> "ohai\n"
 end
 receive do
   {^pid, :result, %Result{status: status}} -> IO.inspect status   #=> 0
