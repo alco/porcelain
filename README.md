@@ -188,7 +188,7 @@ end
 ## Configuring the Goon driver
 
 There are a number of options you can tweak to customize the way `goon` is
-used. All of the options described below should put into your `config.exs`
+used. All of the options described below should be put into your `config.exs`
 file.
 
 
