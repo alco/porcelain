@@ -1,11 +1,10 @@
 language: erlang
 
 otp_release:
-    - 17.1
-    - 17.3
+    - 17.4
 
 env:
-    - ELIXIR_VERSION=1.0.3 REPO=elixir-lang
+    - ELIXIR_VERSION=1.0.5 REPO=elixir-lang
     - ELIXIR_VERSION=1.1-prerelease REPO=alco
 
 before_install:
