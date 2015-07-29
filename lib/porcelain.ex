@@ -137,7 +137,7 @@ defmodule Porcelain do
   Execute a shell invocation synchronously.
 
   This function will launch a system shell and pass the invocation to it. This
-  allows using shell features like haining multiple programs with pipes. The
+  allows using shell features like chaining multiple programs with pipes. The
   downside is that those advanced features may be unavailable on some
   platforms.
 
