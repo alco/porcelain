@@ -70,10 +70,7 @@ defmodule Porcelain.Init do
 
 
   defp get_env(key) do
-    case :application.get_env(:porcelain, key) do
-      :undefined -> nil
-      {:ok, val} -> val
-    end
+    Application.get_env(:porcelain, key)
   end
 
   # this function has to return :ok
@@ -84,7 +81,7 @@ defmodule Porcelain.Init do
   end
 
   defp set_env(key, term) do
-    :application.set_env(:porcelain, key, term)
+    Application.put_env(:porcelain, key, term)
   end
 
   defp find_goon() do

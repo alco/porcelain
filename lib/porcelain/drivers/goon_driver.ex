@@ -102,7 +102,7 @@ defmodule Porcelain.Driver.Goon do
   end
 
   defp goon_exe() do
-    {:ok, goon} = :application.get_env(:porcelain, :driver_state)
+    {:ok, goon} = Application.fetch_env(:porcelain, :driver_state)
     goon
   end
 
@@ -128,8 +128,8 @@ defmodule Porcelain.Driver.Goon do
       _ -> ret = ["-err", "err"|ret]
     end
     if dir=opts[:dir], do: ret = ["-dir", dir|ret]
-    case :application.get_env(:porcelain, :goon_driver_log) do
-      :undefined -> nil
+    case Application.fetch_env(:porcelain, :goon_driver_log) do
+      :error -> nil
       {:ok, val} -> ret = ["-log", val|ret]
     end
     ["-proto", @proto_version|ret]

@@ -411,7 +411,7 @@ defmodule Porcelain do
 
 
   defp driver() do
-    case :application.get_env(:porcelain, :driver_internal) do
+    case Application.fetch_env(:porcelain, :driver_internal) do
       {:ok, mod} -> mod
       _ ->
         raise Porcelain.UsageError, message: "Looks like the :porcelain app is not running. " <>

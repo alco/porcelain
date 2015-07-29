@@ -48,7 +48,7 @@ defmodule Porcelain.Driver.Common do
 
 
   def shell_command(command) do
-    {:ok, {sh, args}} = :application.get_env(:porcelain, :shell_command)
+    {:ok, {sh, args}} = Application.fetch_env(:porcelain, :shell_command)
     {sh, args ++ [command]}
   end
 
