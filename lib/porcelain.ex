@@ -418,32 +418,4 @@ defmodule Porcelain do
           "Make sure you've added :porcelain to the list of applications in your mix.exs."
     end
   end
-
-
-  #@doc """
-  #Takes a shell invocation and produces a tuple `{ cmd, args }` suitable for
-  #use in `exec()` and `spawn()` functions. The format of the invocation should
-  #conform to POSIX shell specification.
-
-  #TODO: define behaviour of env variables, pipes, redirects
-
-  ### Examples
-
-      #iex> Porcelain.shplit(~s(echo "Multiple arguments" in one line))
-      #{"echo", ["Multiple arguments", "in", "one", "line"]}
-
-  #"""
-  #def shplit(invocation) when is_binary(invocation) do
-    #case String.split(invocation, " ", global: false) do
-      #[cmd, rest] ->
-        #{ cmd, split(rest) }
-      #[cmd] ->
-        #{ cmd, [] }
-    #end
-  #end
-
-  ## This splits the list of arguments with the command name already stripped
-  #defp split(args) when is_binary(args) do
-    #String.split args, " "
-  #end
 end
