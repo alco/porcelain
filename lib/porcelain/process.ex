@@ -72,9 +72,20 @@ defmodule Porcelain.Process do
 
   @doc """
   Stops the process created with `Porcelain.spawn/3` or
-  `Porcelain.spawn_shell/2`. Also closes the underlying port.
+  `Porcelain.spawn_shell/2`. Also closes the underlying Erlang port.
 
   May cause "broken pipe" message to be written to stderr.
+
+  ## Caveats
+
+  When using `Porcelain.Driver.Basic`, Porcelain will merely close the Erlang port
+  connected to that process. This normally causes an external process to terminate provided that it
+  is listening on its `stdin`. If not, the external process will continue running.
+
+  See http://erlang.org/pipermail/erlang-questions/2010-March/050227.html for some background info.
+
+  When using `Porcelain.Driver.Goon`, a `SIGTERM` signal will be sent to the external process. If it
+  doesn't terminate after `:goon_stop_timeout` seconds, a `SIGKILL` will be sent to the process.
   """
   @spec stop(t) :: true
 

@@ -11,6 +11,7 @@ defmodule Porcelain.Driver.Common do
   defcallback feed_input(port :: port, input :: iodata)
   defcallback process_data(data :: binary, output :: any, error :: any)
   defcallback send_signal(port :: port, signal :: Porcelain.Process.signal)
+  defcallback stop_process(port :: port) :: integer
 
 
   alias Porcelain.Driver.Common.StreamServer
@@ -150,8 +151,8 @@ defmodule Porcelain.Driver.Common do
         collect_output(port, output, error, result_opt, callback_module)
 
       {:stop, from, ref} ->
-        Port.close(port)
-        result = finalize_result(nil, output, error)
+        status = callback_module.stop_process(port)
+        result = finalize_result(status, output, error)
         send_result(output, error, result_opt, result)
         send(from, {ref, :stopped})
     end

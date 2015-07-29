@@ -219,6 +219,14 @@ defmodule Porcelain.Driver.Goon do
     Port.command(port, [1,sig])
   end
 
+  @doc false
+  def stop_process(port) do
+    status = nil
+    #status = Port.command(port, [2, Application.get_env(:porcelain, :goon_stop_timeout, 10)])
+    Port.close(port)
+    status
+  end
+
   ###
 
   @doc false

@@ -158,4 +158,10 @@ defmodule Porcelain.Driver.Basic do
   def send_signal(_port, _sig) do
     # basic driver does not support signals
   end
+
+  @doc false
+  def stop_process(port) do
+    Port.close(port)
+    nil
+  end
 end

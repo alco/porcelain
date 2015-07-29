@@ -220,6 +220,14 @@ config :porcelain, :goon_driver_path, <path>
 Set an absolute path to the `goon` executable. If this is not set, Porcelain
 will search your system's `PATH` by default.
 
+```elixir
+config :porcelain, :goon_stop_timeout, <integer>
+```
+
+This setting is used by `Porcelain.Process.stop/1`. It specifes the number of seconds `goon` will
+wait for the external process to terminate before it sends `SIGKILL` to it. Default timeout is 10
+seconds.
+
 
 ## Going deeper
 
