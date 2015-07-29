@@ -8,6 +8,10 @@ defmodule Porcelain.Driver.Common do
   defcallback spawn(prog :: binary, args :: [binary], opts :: Keyword.t)
   defcallback spawn_shell(prog :: binary, opts :: Keyword.t)
 
+  defcallback feed_input(port :: port, input :: iodata)
+  defcallback process_data(data :: binary, output :: any, error :: any)
+  defcallback send_signal(port :: port, signal :: Porcelain.Process.signal)
+
 
   alias Porcelain.Driver.Common.StreamServer
 
@@ -111,21 +115,22 @@ defmodule Porcelain.Driver.Common do
 
   ###
 
-  def communicate(port, input, output, error, {_, port_input_handler, _}=handlers, opts) do
+  def communicate(port, input, output, error, callback_module, opts) do
+    port_input_handler = &callback_module.feed_input/2
     input_fun = fn -> send_input(port, input, port_input_handler) end
     if opts[:async_input] do
       spawn(input_fun)
     else
       input_fun.()
     end
-    collect_output(port, output, error, opts[:result], handlers)
+    collect_output(port, output, error, opts[:result], callback_module)
   end
 
-  defp collect_output(port, output, error, result_opt, {port_data_handler, port_input_handler, port_signal_handler}=handlers) do
+  defp collect_output(port, output, error, result_opt, callback_module) do
     receive do
       { ^port, {:data, data} } ->
-        {output, error} = port_data_handler.(data, output, error)
-        collect_output(port, output, error, result_opt, handlers)
+        {output, error} = callback_module.process_data(data, output, error)
+        collect_output(port, output, error, result_opt, callback_module)
 
       { ^port, {:exit_status, status} } ->
         result = finalize_result(status, output, error)
@@ -137,12 +142,12 @@ defmodule Porcelain.Driver.Common do
         end
 
       {:input, data} ->
-        port_input_handler.(port, data)
-        collect_output(port, output, error, result_opt, handlers)
+        callback_module.feed_input(port, data)
+        collect_output(port, output, error, result_opt, callback_module)
 
       {:signal, sig} ->
-        port_signal_handler.(port, sig)
-        collect_output(port, output, error, result_opt, handlers)
+        callback_module.send_signal(port, sig)
+        collect_output(port, output, error, result_opt, callback_module)
 
       {:stop, from, ref} ->
         Port.close(port)

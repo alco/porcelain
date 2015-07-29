@@ -49,8 +49,9 @@ defmodule Porcelain.Driver.Goon do
     opts = Common.compile_options(opts)
     exe = find_executable(prog, opts, shell_flag)
     port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-    Common.communicate(port, opts[:in], opts[:out], opts[:err], {&process_data/3, &feed_input/2, &send_signal/2},
-        async_input: opts[:async_in])
+    Common.communicate(
+      port, opts[:in], opts[:out], opts[:err], __MODULE__, async_input: opts[:async_in]
+    )
   end
 
   defp do_spawn(prog, args, opts, shell_flag) do
@@ -72,8 +73,9 @@ defmodule Porcelain.Driver.Goon do
 
     pid = spawn(fn ->
       port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-      Common.communicate(port, opts[:in], out_opt, opts[:err], {&process_data/3, &feed_input/2, &send_signal/2},
-          async_input: true, result: opts[:result])
+      Common.communicate(
+        port, opts[:in], out_opt, opts[:err], __MODULE__, async_input: true, result: opts[:result]
+      )
     end)
 
     %Porcelain.Process{
@@ -139,11 +141,12 @@ defmodule Porcelain.Driver.Goon do
 
   ###
 
-  defp process_data(<<0x0>> <> data, output, error) do
+  @doc false
+  def process_data(<<0x0>> <> data, output, error) do
     {Common.process_port_output(output, data, :out), error}
   end
 
-  defp process_data(<<0x1>> <> data, output, error) do
+  def process_data(<<0x1>> <> data, output, error) do
     {output, Common.process_port_output(error, data, :err)}
   end
 
@@ -151,12 +154,13 @@ defmodule Porcelain.Driver.Goon do
   # in the Goex protocol v2.0.
   @input_chunk_size 65535-1
 
+  @doc false
   # EOF from user code
-  defp feed_input(port, "") do
+  def feed_input(port, "") do
     send_eof(port)
   end
 
-  defp feed_input(port, iodata) do
+  def feed_input(port, iodata) do
     do_feed_input(port, iodata)
   end
 
@@ -202,15 +206,16 @@ defmodule Porcelain.Driver.Goon do
     Port.command(port, [])
   end
 
-  defp send_signal(port, :int) do
+  @doc false
+  def send_signal(port, :int) do
     Port.command(port, [1,128])
   end
 
-  defp send_signal(port, :kill) do
+  def send_signal(port, :kill) do
     Port.command(port, [1,129])
   end
 
-  defp send_signal(port, sig) when is_integer(sig) do
+  def send_signal(port, sig) when is_integer(sig) do
     Port.command(port, [1,sig])
   end
 

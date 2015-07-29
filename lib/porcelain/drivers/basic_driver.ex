@@ -52,8 +52,9 @@ defmodule Porcelain.Driver.Basic do
     opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
     port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-    Common.communicate(port, opts[:in], opts[:out], opts[:err], {&process_data/3, &feed_input/2, &send_signal/2},
-        async_input: opts[:async_in])
+    Common.communicate(
+      port, opts[:in], opts[:out], opts[:err], __MODULE__, async_input: opts[:async_in]
+    )
   end
 
   defp do_spawn(prog, args, opts, shell_flag) do
@@ -75,8 +76,9 @@ defmodule Porcelain.Driver.Basic do
 
     pid = spawn(fn ->
       port = Port.open(exe, port_options(shell_flag, prog, args, opts))
-      Common.communicate(port, opts[:in], out_opt, opts[:err], {&process_data/3, &feed_input/2, &send_signal/2},
-          async_input: true, result: opts[:result])
+      Common.communicate(
+        port, opts[:in], out_opt, opts[:err], __MODULE__, async_input: true, result: opts[:result]
+      )
     end)
 
     %Porcelain.Process{
@@ -125,12 +127,13 @@ defmodule Porcelain.Driver.Basic do
 
   ###
 
-  defp feed_input(port, iodata) when is_list(iodata) do
+  @doc false
+  def feed_input(port, iodata) when is_list(iodata) do
     # we deconstruct the list here to avoid recursive calls in do_feed_input
     Enum.each(iodata, &do_feed_input(port, &1))
   end
 
-  defp feed_input(port, iodata) do
+  def feed_input(port, iodata) do
     do_feed_input(port, iodata)
   end
 
@@ -146,11 +149,13 @@ defmodule Porcelain.Driver.Basic do
     Port.command(port, data)
   end
 
-  defp send_signal(_port, _sig) do
-    # basic driver does not support signals
+  @doc false
+  def process_data(data, output, error) do
+    {Common.process_port_output(output, data, :out), error}
   end
 
-  defp process_data(data, output, error) do
-    {Common.process_port_output(output, data, :out), error}
+  @doc false
+  def send_signal(_port, _sig) do
+    # basic driver does not support signals
   end
 end
