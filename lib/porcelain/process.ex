@@ -88,20 +88,6 @@ defmodule Porcelain.Process do
     end
   end
 
-  #  @spec os_pid(t) :: {:ok, non_neg_integer | nil} | {:error, :noproc}
-  #
-  #  def os_pid(%P{pid: pid}) do
-  #    mon = Process.monitor(pid)
-  #    ref = make_ref()
-  #    send(pid, {:get_os_pid, self(), ref})
-  #    receive do
-  #      {^ref, os_pid} ->
-  #        Process.demonitor(mon, [:flush])
-  #        {:ok, os_pid}
-  #      {:DOWN, ^mon, _, _, _info} -> {:error, :noproc}
-  #    end
-  #  end
-
   @doc """
   Send an OS signal to the processes.
 

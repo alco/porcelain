@@ -144,13 +144,6 @@ defmodule Porcelain.Driver.Common do
         port_signal_handler.(port, sig)
         collect_output(port, output, error, result_opt, handlers)
 
-        #      {:get_os_pid, from, ref} ->
-        #        case :erlang.port_info(port, :os_pid) do
-        #          {:os_pid, :undefined} -> send(from, {ref, nil})
-        #          {:os_pid, os_pid} -> send(from, {ref, os_pid})
-        #          :undefined -> send(from, {ref, nil})
-        #        end
-
       {:stop, from, ref} ->
         Port.close(port)
         result = finalize_result(nil, output, error)
