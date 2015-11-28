@@ -4,10 +4,11 @@ defmodule Porcelain.Mixfile do
   def project do
     [
       app: :porcelain,
-      version: "2.0.0",
+      version: "2.0.1",
       elixir: ">= 0.14.3 and < 2.0.0",
-      docs: docs,
+      deps: deps,
       description: description,
+      docs: docs,
       package: package,
     ]
   end
@@ -21,16 +22,7 @@ defmodule Porcelain.Mixfile do
 
   def docs do
     [
-      formatter: "sphinx",
-      #highlighter: :"highligh.js" | :"pygments",
-      readme: true,
-
-      formatter_opts: [
-        gen_overview: false,
-        pygments_style: "emacs",
-        html_theme: "pyramid",
-        html_type: "singlehtml"
-      ]
+      extras: ["README.md"],
     ]
   end
 
@@ -46,12 +38,15 @@ defmodule Porcelain.Mixfile do
       contributors: ["Alexei Sholik"],
       licenses: ["MIT"],
       links: %{
-        "Documentation" => "http://porcelain.readthedocs.org",
         "GitHub" => "https://github.com/alco/porcelain",
       }
     ]
   end
 
-  # no deps
-  # --alco
+  defp deps do
+    [
+      {:earmark, "> 0.0.0", only: :dev},
+      {:ex_doc, "> 0.0.0", only: :dev},
+    ]
+  end
 end
