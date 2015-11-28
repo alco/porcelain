@@ -228,6 +228,12 @@ This setting is used by `Porcelain.Process.stop/1`. It specifes the number of se
 wait for the external process to terminate before it sends `SIGKILL` to it. Default timeout is 10
 seconds.
 
+```elixir
+config :porcelain, :goon_warn_if_missing, <boolean>
+```
+
+Print a warning to the console if the `goon` executable isn't found. Default: `true`.
+
 
 ## Going deeper
 

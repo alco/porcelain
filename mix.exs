@@ -13,7 +13,10 @@ defmodule Porcelain.Mixfile do
   end
 
   def application do
-    [mod: {Porcelain.App, []}]
+    [
+      applications: [:logger],
+      mod: {Porcelain.App, []},
+    ]
   end
 
   def docs do

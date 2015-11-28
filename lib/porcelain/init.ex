@@ -1,6 +1,8 @@
 defmodule Porcelain.Init do
   @moduledoc false
 
+  require Logger
+
   alias Porcelain.Driver.Basic
   alias Porcelain.Driver.Goon
 
@@ -22,8 +24,19 @@ defmodule Porcelain.Init do
         set_driver(Goon, path)
 
       {:error, error} ->
-        log_warning error
-        log_string "falling back to the basic driver"
+        case error do
+          :goon_not_found ->
+            if Application.get_env(:porcelain, :goon_warn_if_missing, true) do
+              Logger.info ["[Porcelain]: ", error_string(error)]
+              Logger.info "[Porcelain]: falling back to the basic driver."
+              Logger.info "[Porcelain]: (set `config :porcelain, driver: Porcelain.Driver.Basic` "
+                       <> "or `config :porcelain, goon_warn_if_missing: false` to disable this "
+                       <> "warning)"
+            end
+          other ->
+            Logger.warn ["[Porcelain]: ", error_string(other)]
+            Logger.warn "[Porcelain]: falling back to the basic driver."
+        end
         set_driver(Basic)
     end
   end
@@ -111,13 +124,5 @@ defmodule Porcelain.Init do
 
   defp error_string(:goon_not_found) do
     "goon executable not found"
-  end
-
-  defp log_warning(error) do
-    error |> error_string() |> log_string()
-  end
-
-  defp log_string(msg) do
-    IO.puts :stderr, ["[Porcelain]: ", msg]
   end
 end
