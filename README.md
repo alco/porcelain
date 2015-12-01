@@ -58,7 +58,7 @@ called `goon`. See which particular features it implements in the reference
 docs [here][goon_ref]. Go to `goon`'s [project page][goon] to find out how to
 install it.
 
-  [goon_ref]: http://porcelain.readthedocs.org/en/latest/index.html#document-ref/Porcelain.Driver.Goon
+  [goon_ref]: http://hexdocs.pm/porcelain/Porcelain.Driver.Goon.html
   [goon]: https://github.com/alco/goon#goon
 
 
@@ -241,7 +241,7 @@ Take a look at the [reference docs][ref] for the full description of all
 provided functions and supported options.
 
   [exapp]: https://github.com/alco/porcelain_example
-  [ref]: http://porcelain.readthedocs.org
+  [ref]: http://hexdocs.pm/porcelain/api-reference.html
 
 
 ## Known issues and roadmap
