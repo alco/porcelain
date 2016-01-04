@@ -100,7 +100,7 @@ defmodule Porcelain.Driver.Basic do
 
   defp find_executable(prog, :shell) do
     {sh, _} = Common.shell_command(prog)
-    if exe=:os.find_executable(sh) do
+    if exe=:os.find_executable(:erlang.binary_to_list(sh)) do
       {:spawn_executable, exe}
     else
       throw "Shell not found for: #{prog}"
