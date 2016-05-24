@@ -120,17 +120,17 @@ defmodule Porcelain.Driver.Goon do
 
   defp goon_options(opts) do
     ret = []
-    if opts[:in], do: ret = ["-in"|ret]
-    if opts[:out], do: ret = ["-out"|ret]
+    ret = if opts[:in], do: ["-in"|ret]
+    ret = if opts[:out], do: ["-out"|ret]
+    ret =
     case opts[:err] do
-      :out -> ret = ["-err", "out"|ret]
-      nil -> nil
-      _ -> ret = ["-err", "err"|ret]
+      :out -> ["-err", "out"|ret]
+      _ -> ["-err", "err"|ret]
     end
-    if dir=opts[:dir], do: ret = ["-dir", dir|ret]
+    ret = if dir=opts[:dir], do: ["-dir", dir|ret]
+    ret =
     case Application.fetch_env(:porcelain, :goon_driver_log) do
-      :error -> nil
-      {:ok, val} -> ret = ["-log", val|ret]
+      {:ok, val} -> ["-log", val|ret]
     end
     ["-proto", @proto_version|ret]
   end
