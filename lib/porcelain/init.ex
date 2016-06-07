@@ -75,7 +75,7 @@ defmodule Porcelain.Init do
         shell = case {System.get_env("COMSPEC"), osname} do
           {nil, :windows} -> 'command.com'
           {nil, _}        -> 'cmd'
-          {cmd, _}        -> cmd
+          {cmd, _}        -> String.to_list(cmd)
         end
         set_env(:shell_command, {shell, ["/c"]})
     end
