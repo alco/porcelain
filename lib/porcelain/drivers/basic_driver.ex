@@ -61,17 +61,16 @@ defmodule Porcelain.Driver.Basic do
     opts = Common.compile_options(opts)
     exe = find_executable(prog, shell_flag)
 
-    out_opt = opts[:out]
-    out_ret = case out_opt do
+    {out_opt, out_ret} = case opts[:out] do
       :stream ->
         {:ok, server} = StreamServer.start()
-        out_opt = {:stream, server}
-        Stream.unfold(server, &Common.read_stream/1)
+        {{:stream, server}, Stream.unfold(server, &Common.read_stream/1)}
 
-      {atom, ""} when atom in [:string, :iodata] ->
-        atom
+      {atom, ""} = opt when atom in [:string, :iodata] ->
+        {opt, atom}
 
-      _ -> out_opt
+      other ->
+        {other, other}
     end
 
     pid = spawn(fn ->
@@ -117,12 +116,9 @@ defmodule Porcelain.Driver.Basic do
   end
 
   defp common_port_options(opts) do
-    ret = [:stream|Common.port_options(opts)]
-    if dir=opts[:dir],
-      do: ret = [{:cd, dir}|ret]
-    if opts[:err] == :out,
-      do: ret = [:stderr_to_stdout|ret]
-    ret
+    [:stream | Common.port_options(opts)]
+    ++ (if dir=opts[:dir], do: [{:cd, dir}], else: [])
+    ++ (if opts[:err] == :out, do: [:stderr_to_stdout], else: [])
   end
 
   ###

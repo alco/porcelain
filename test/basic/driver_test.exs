@@ -2,7 +2,7 @@ defmodule PorcelainTest.BasicTest do
   use ExUnit.Case
 
   import TestUtil
-  import Porcelain, only: [shell: 1, shell: 2, exec: 2, exec: 3]
+  import Porcelain, only: [shell: 2, exec: 2, exec: 3]
 
   alias Porcelain.Result
 
