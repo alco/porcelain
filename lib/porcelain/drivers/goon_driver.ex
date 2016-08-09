@@ -231,6 +231,7 @@ defmodule Porcelain.Driver.Goon do
   def check_goon_version(path) do
     ackstr = for << <<byte>> <- :crypto.rand_bytes(8) >>,
                  byte != 0, into: "", do: <<byte>>
+    ackstr = Base.encode16(ackstr)
     args = ["-proto", @proto_version, "-ack", ackstr]
     opts = {[out: {:string, ""}], []}
     result = %Porcelain.Result{} = Porcelain.Driver.Basic.exec(path, args, opts)
