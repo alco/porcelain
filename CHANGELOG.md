@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## v2.0.3 - Nov 10, 2016
+
+  * Add `:crypto` to the application list
+
 ## v2.0.0 - Aug 20, 2014
 
   * Fix a mistake in the message format used for sending output from the
