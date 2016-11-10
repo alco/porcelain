@@ -15,7 +15,7 @@ defmodule Porcelain.Mixfile do
 
   def application do
     [
-      applications: [:logger],
+      applications: [:logger, :crypto],
       mod: {Porcelain.App, []},
     ]
   end
