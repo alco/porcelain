@@ -117,27 +117,26 @@ end
 
 Second, the module that launches the one-off program:
 
-```defmodule Command.Minion do
-	use GenServer
-	require Logger
-	import Porcelain
-	
-	def start_link(opts \\ []) do
-    	GenServer.start_link(__MODULE__, opts)
-  	end
-  	def init(state) do
-    	send self, {:start_minion}
-    	{:ok, state}
-  	end
+```
+defmodule Command.Minion do
+  use GenServer
+  require Logger
+  import Porcelain
 
-	def handle_info({:start_minion}, state) do
-		alias Porcelain.Process, as: Proc
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts)
+  end
 
-	 	process = Porcelain.spawn("command", [], [])
+  def init(state) do
+    send self, {:start_minion}
+    {:ok, state}
+  end
 
-	    Proc.await(process, :infinity) 
-	  	{:noreply, state}
-	end
+  def handle_info({:start_minion}, state) do
+    process = Porcelain.spawn("command", [], [])
+    Porcelain.Process.await(process, :infinity) 
+    {:noreply, state}
+  end
 end
 ```
 
