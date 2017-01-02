@@ -101,7 +101,7 @@ defmodule Command do
 
     children = [
       supervisor(Command.Endpoint, []),
-      worker(Command.Worker, []),
+      worker(Command.Minion, []),
     ]
 
     opts = [strategy: :one_for_one, name: Command.Supervisor]
