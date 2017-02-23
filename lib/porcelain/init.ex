@@ -100,7 +100,12 @@ defmodule Porcelain.Init do
   defp find_goon() do
     cond do
       path=get_env(:goon_driver_path) ->
-        path
+        case path do
+          {mod, fun} ->
+            apply(mod, fun, [])
+          _ ->
+            path
+        end
       File.exists?("goon") ->
         Path.absname("goon")
       exe=:os.find_executable('goon') ->
