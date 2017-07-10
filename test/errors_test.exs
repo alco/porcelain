@@ -36,6 +36,14 @@ defmodule PorcelainTest.ErrorsTest do
            == {:error, "Command not found: whatever"}
   end
 
+  test "non-existent program, but folder of that name [basic, noshell]" do
+    assert exec("lib", [])
+           == {:error, "Command not found: lib"}
+
+    assert Porcelain.spawn("lib", [])
+           == {:error, "Command not found: lib"}
+  end
+
   @tag :posix
   @tag :goon
   test "non-existent program [goon, shell, redirect]" do
