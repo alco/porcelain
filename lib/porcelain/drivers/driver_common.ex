@@ -161,8 +161,8 @@ defmodule Porcelain.Driver.Common do
     %Porcelain.Result{status: status, out: flatten(out), err: flatten(err)}
   end
 
-  defp send_result(out, err, opt, result) do
-    result = if opt == :discard, do: result = nil, else: result
+  defp send_result(out, err, opt, default_result) do
+    result = if opt == :discard, do: nil, else: default_result
     msg = {self(), :result, result}
 
     out_ret = case out do
