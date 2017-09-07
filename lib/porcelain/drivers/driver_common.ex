@@ -1,15 +1,15 @@
 defmodule Porcelain.Driver.Common do
   @moduledoc false
 
-  @callback exec(prog :: binary, args :: [binary], opts :: Keyword.t) :: any
-  @callback exec_shell(prog :: binary, opts :: Keyword.t) :: any
-  @callback spawn(prog :: binary, args :: [binary], opts :: Keyword.t) :: Porcelain.Process
-  @callback spawn_shell(prog :: binary, opts :: Keyword.t) :: Porcelain.Process
+  @callback exec(prog :: binary, args :: [binary], opts :: Keyword.t) :: Porcelain.Result.t
+  @callback exec_shell(prog :: binary, opts :: Keyword.t) :: Porcelain.Result.t
+  @callback spawn(prog :: binary, args :: [binary], opts :: Keyword.t) :: Porcelain.Process.t
+  @callback spawn_shell(prog :: binary, opts :: Keyword.t) :: Porcelain.Process.t
 
   @callback feed_input(port :: port, input :: iodata) :: any
-  @callback process_data(data :: binary, output :: any, error :: any) :: tuple
+  @callback process_data(data :: binary, output :: any, error :: any) :: {any, any}
   @callback send_signal(port :: port, signal :: Porcelain.Process.signal) :: boolean | nil
-  @callback stop_process(port :: port) :: integer
+  @callback stop_process(port :: port) :: integer | nil
 
 
   alias Porcelain.Driver.Common.StreamServer
