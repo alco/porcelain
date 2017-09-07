@@ -221,10 +221,10 @@ defmodule PorcelainTest.BasicTest do
 
     assert %Porcelain.Result{out: out, status: 0}
            = Porcelain.shell("head -c #{small_size} | wc -c", in: small_input)
-    assert String.strip(out) == "#{small_size}"
+    assert String.trim(out) == "#{small_size}"
 
     assert %Porcelain.Result{out: out, status: 0}
            = Porcelain.shell("head -c #{large_size} | wc -c", in: large_input)
-    assert String.strip(out) == "#{large_size}"
+    assert String.trim(out) == "#{large_size}"
   end
 end

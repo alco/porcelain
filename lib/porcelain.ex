@@ -402,14 +402,14 @@ defmodule Porcelain do
   end
 
   defp convert_env_name(name) when is_binary(name),
-    do: String.to_char_list(name)
+    do: String.to_charlist(name)
 
   defp convert_env_name(name) when is_atom(name),
-    do: Atom.to_char_list(name)
+    do: Atom.to_charlist(name)
 
   defp convert_env_val(false), do: false
 
-  defp convert_env_val(bin), do: String.to_char_list(bin)
+  defp convert_env_val(bin), do: String.to_charlist(bin)
 
 
   defp driver() do

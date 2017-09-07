@@ -196,14 +196,14 @@ defmodule PorcelainTest.GoonTest do
 
     assert %Porcelain.Result{out: out, status: 0}
            = Porcelain.exec("wc", ["-c"], in: small_input)
-    assert String.strip(out) == "#{small_size}"
+    assert String.trim(out) == "#{small_size}"
 
     assert %Porcelain.Result{out: out, status: 0}
            = Porcelain.exec("wc", ["-c"], in: large_input)
-    assert String.strip(out) == "#{large_size}"
+    assert String.trim(out) == "#{large_size}"
 
     assert %Porcelain.Result{out: out, status: 0}
            = Porcelain.exec("wc", ["-l"], in: very_large_input)
-    assert String.strip(out) == "#{megabyte}"
+    assert String.trim(out) == "#{megabyte}"
   end
 end
