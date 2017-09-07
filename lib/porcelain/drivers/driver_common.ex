@@ -1,17 +1,15 @@
 defmodule Porcelain.Driver.Common do
   @moduledoc false
 
-  use Behaviour
+  @callback exec(prog :: binary, args :: [binary], opts :: Keyword.t) :: any
+  @callback exec_shell(prog :: binary, opts :: Keyword.t) :: any
+  @callback spawn(prog :: binary, args :: [binary], opts :: Keyword.t) :: Porcelain.Process
+  @callback spawn_shell(prog :: binary, opts :: Keyword.t) :: Porcelain.Process
 
-  defcallback exec(prog :: binary, args :: [binary], opts :: Keyword.t)
-  defcallback exec_shell(prog :: binary, opts :: Keyword.t)
-  defcallback spawn(prog :: binary, args :: [binary], opts :: Keyword.t)
-  defcallback spawn_shell(prog :: binary, opts :: Keyword.t)
-
-  defcallback feed_input(port :: port, input :: iodata)
-  defcallback process_data(data :: binary, output :: any, error :: any)
-  defcallback send_signal(port :: port, signal :: Porcelain.Process.signal)
-  defcallback stop_process(port :: port) :: integer
+  @callback feed_input(port :: port, input :: iodata) :: any
+  @callback process_data(data :: binary, output :: any, error :: any) :: tuple
+  @callback send_signal(port :: port, signal :: Porcelain.Process.signal) :: boolean | nil
+  @callback stop_process(port :: port) :: integer
 
 
   alias Porcelain.Driver.Common.StreamServer
@@ -162,7 +160,7 @@ defmodule Porcelain.Driver.Common do
   end
 
   defp send_result(out, err, opt, result) do
-    result = if opt == :discard, do: result = nil, else: result
+    result = if opt == :discard, do: nil, else: result
     msg = {self(), :result, result}
 
     out_ret = case out do
