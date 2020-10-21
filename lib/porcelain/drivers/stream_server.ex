@@ -8,6 +8,10 @@ defmodule Porcelain.Driver.Common.StreamServer do
 
   use GenServer
 
+  def init(init_arg) do
+    {:ok, init_arg}
+  end
+
   def start() do
     GenServer.start(__MODULE__, state(chunks: :queue.new))
   end
