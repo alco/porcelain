@@ -89,6 +89,56 @@ File.write!("input.txt", "lines\nread\nfrom\nfile\n")
 result = Porcelain.exec("sort", ["input.txt"])
 IO.inspect result.out   #=> "file\nfrom\nlines\nread\n"
 ```
+### Launching one-off programs under the Supervisor, so they are restarted when they crash
+
+First the Application code:
+```
+defmodule Command do
+  use Application
+
+  def start(_type, _args) do
+    import Supervisor.Spec
+
+    children = [
+      supervisor(Command.Endpoint, []),
+      worker(Command.Minion, []),
+    ]
+
+    opts = [strategy: :one_for_one, name: Command.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  def config_change(changed, _new, removed) do
+    Command.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
+```
+
+Second, the module that launches the one-off program:
+
+```
+defmodule Command.Minion do
+  use GenServer
+  require Logger
+  import Porcelain
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts)
+  end
+
+  def init(state) do
+    send self, {:start_minion}
+    {:ok, state}
+  end
+
+  def handle_info({:start_minion}, state) do
+    process = Porcelain.spawn("command", [], [])
+    Porcelain.Process.await(process, :infinity) 
+    {:noreply, state}
+  end
+end
+```
 
 
 ### Passing input and getting output
