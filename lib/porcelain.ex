@@ -121,8 +121,8 @@ defmodule Porcelain do
       Basically, it accepts any kind of dict, including keyword lists.
 
   """
-  @spec exec(binary, [binary])            :: Porcelain.Result.t
-  @spec exec(binary, [binary], Keyword.t) :: Porcelain.Result.t
+  @spec exec(binary, [binary])            :: Porcelain.Result.t | {:error, String.t}
+  @spec exec(binary, [binary], Keyword.t) :: Porcelain.Result.t | {:error, String.t}
 
   def exec(prog, args, options \\ [])
         when is_binary(prog) and is_list(args) and is_list(options)
@@ -143,8 +143,8 @@ defmodule Porcelain do
 
   It is similar to the `exec/3` function in all other respects.
   """
-  @spec shell(binary)            :: Porcelain.Result.t
-  @spec shell(binary, Keyword.t) :: Porcelain.Result.t
+  @spec shell(binary)            :: Porcelain.Result.t | {:error, String.t}
+  @spec shell(binary, Keyword.t) :: Porcelain.Result.t | {:error, String.t}
 
   def shell(cmd, options \\ []) when is_binary(cmd) and is_list(options) do
     catch_throws fn ->
@@ -218,8 +218,8 @@ defmodule Porcelain do
         and `err: :stream`.
 
   """
-  @spec spawn(binary, [binary])            :: Porcelain.Process.t
-  @spec spawn(binary, [binary], Keyword.t) :: Porcelain.Process.t
+  @spec spawn(binary, [binary])            :: Porcelain.Process.t | {:error, String.t}
+  @spec spawn(binary, [binary], Keyword.t) :: Porcelain.Process.t | {:error, String.t}
 
   def spawn(prog, args, options \\ [])
     when is_binary(prog) and is_list(args) and is_list(options)
@@ -235,8 +235,8 @@ defmodule Porcelain do
 
   Works similar to `spawn/3`.
   """
-  @spec spawn_shell(binary)            :: Porcelain.Process.t
-  @spec spawn_shell(binary, Keyword.t) :: Porcelain.Process.t
+  @spec spawn_shell(binary)            :: Porcelain.Process.t | {:error, String.t}
+  @spec spawn_shell(binary, Keyword.t) :: Porcelain.Process.t | {:error, String.t}
 
   def spawn_shell(cmd, options \\ [])
         when is_binary(cmd) and is_list(options)
