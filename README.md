@@ -2,8 +2,12 @@ Porcelain
 =========
 
 [![Build status](https://travis-ci.org/alco/porcelain.svg "Build status")](https://travis-ci.org/alco/porcelain)
-[![Hex version](https://img.shields.io/hexpm/v/porcelain.svg "Hex version")](https://hex.pm/packages/porcelain)
-![Hex downloads](https://img.shields.io/hexpm/dt/porcelain.svg "Hex downloads")
+[![Module Version](https://img.shields.io/hexpm/v/porcelain.svg)](https://hex.pm/packages/porcelain)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/porcelain/)
+[![Total Download](https://img.shields.io/hexpm/dt/porcelain.svg)](https://hex.pm/packages/porcelain)
+[![License](https://img.shields.io/hexpm/l/porcelain.svg)](https://github.com/alco/porcelain/blob/master/LICENSE)
+[![Last Updated](https://img.shields.io/github/last-commit/alco/porcelain.svg)](https://github.com/alco/porcelain/commits/master)
+
 
 Porcelain implements a saner approach to launching and communicating with
 external OS processes from Elixir. Built on top of Erlang's ports, it provides
@@ -44,12 +48,20 @@ extensions, please refer to the [wiki][].
 Add Porcelain as a dependency to your Mix project:
 
 ```elixir
-def application do
-  [applications: [:porcelain]]
-end
-
 defp deps do
-  [{:porcelain, "~> 2.0"}]
+  [
+    {:porcelain, "~> 2.0"}
+  ]
+end
+```
+
+For Elixir before 1.4:
+
+```elixir
+def application do
+  [
+    applications: [:porcelain]
+  ]
 end
 ```
 
@@ -152,7 +164,7 @@ Porcelain.exec("grep", ["div", "-m", "4"], opts)
 # </div>
 ```
 
-The `SocketStream` module used above wraps a tcp socket in a stream. Its
+The `SocketStream` module used above wraps a TCP socket in a stream. Its
 implementation can be found in the `test/util/socket_stream.exs` file.
 
 
@@ -224,7 +236,7 @@ will search your system's `PATH` by default.
 config :porcelain, :goon_stop_timeout, <integer>
 ```
 
-This setting is used by `Porcelain.Process.stop/1`. It specifes the number of seconds `goon` will
+This setting is used by `Porcelain.Process.stop/1`. It specifies the number of seconds `goon` will
 wait for the external process to terminate before it sends `SIGKILL` to it. Default timeout is 10
 seconds.
 
@@ -259,6 +271,8 @@ particular to
   * Tim Ruffles
 
 
-## License
+## Copyright and License
 
-This software is licensed under [the MIT license](LICENSE).
+Copyright (c) 2014 Alexei Sholik
+
+Released under the MIT License, which can be found in the repository in [`LICENSE`](https://github.com/alco/porcelain/blob/master/LICENSE).
