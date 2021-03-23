@@ -1,52 +1,58 @@
 defmodule Porcelain.Mixfile do
   use Mix.Project
 
+  @source_url "https://github.com/alco/porcelain"
+  @version "2.0.3"
+
   def project do
     [
       app: :porcelain,
-      version: "2.0.3",
+      version: @version,
       elixir: "~> 1.3",
       deps: deps(),
-      description: description(),
       docs: docs(),
-      package: package(),
+      package: package()
     ]
   end
 
   def application do
     [
       applications: [:logger, :crypto],
-      mod: {Porcelain.App, []},
+      mod: {Porcelain.App, []}
     ]
   end
 
   def docs do
     [
-      extras: [{"README.md", title: "Readme"}],
+      extras: ["CHANGELOG.md", "README.md"],
+      main: "readme",
+      source_url: @source_url,
+      formatters: ["html"]
     ]
   end
 
   defp description do
     "Porcelain implements a saner approach to launching and communicating " <>
-    "with external OS processes from Elixir. Built on top of Erlang's ports, " <>
-    "it provides richer functionality and simpler API."
+      "with external OS processes from Elixir. Built on top of Erlang's ports, " <>
+      "it provides richer functionality and simpler API."
   end
 
   defp package do
     [
+      description: description(),
       files: ["lib", "mix.exs", "README.md", "CHANGELOG.md", "LICENSE"],
       maintainers: ["Alexei Sholik"],
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/alco/porcelain",
+        "Changelog" => "https://hexdocs.pm/porcelain",
+        "GitHub" => @source_url
       }
     ]
   end
 
   defp deps do
     [
-      {:earmark, "> 0.0.0", only: :dev},
-      {:ex_doc, "> 0.0.0", only: :dev},
+      {:ex_doc, "> 0.0.0", only: :dev, runtime: false}
     ]
   end
 end
